@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent Cost Estimator · Deloitte AI &amp; Data</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;800&family=Roboto+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --d-green:#86BC25; --d-green-deep:#046A38; --d-green-mid:#2C8A4B; --d-teal:#0097A9;
+  --d-blue:#005587; --d-black:#000; --d-ink:#1A1A1A; --d-gray:#53565A; --d-gray-soft:#D0D0CE;
+  --d-paper:#F7F7F5; --d-line:#E4E4E1; --d-warn:#ED8B00; --d-red:#DA291C;
+  --sans:'Open Sans',system-ui,sans-serif; --mono:'Roboto Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font:14px/1.55 var(--sans);color:var(--d-ink);background:var(--d-paper)}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:13px;color:var(--d-ink)}
+input[type=number],input[type=text],select,textarea{border:1px solid var(--d-gray-soft);border-radius:4px;padding:7px 9px;background:#fff;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--d-green);outline-offset:0;border-color:transparent}
+::placeholder{color:#B7B7B3}
+
+/* ---------- masthead ---------- */
+header{position:sticky;top:0;z-index:60;background:var(--d-black);color:#fff}
+.mast{max-width:1360px;margin:0 auto;padding:0 22px;height:56px;display:flex;align-items:center;gap:16px}
+.wordmark{font:800 21px var(--sans);letter-spacing:-.3px;white-space:nowrap}
+.wordmark span{color:var(--d-green)}
+.mast .rule{width:1px;height:22px;background:#3a3a3a}
+.mast h1{font:600 13.5px var(--sans);letter-spacing:.02em;white-space:nowrap}
+.mast h1 em{font-style:normal;color:#9d9d9a;font-weight:400}
+.mast .spacer{flex:1}
+.seg{display:flex;border:1px solid #4c4c4c;border-radius:20px;overflow:hidden}
+.seg button{background:transparent;color:#c9c9c6;border:0;font:600 11.5px var(--sans);padding:6px 14px;letter-spacing:.02em}
+.seg button.on{background:var(--d-green);color:#000}
+
+/* ---------- live summary strip ---------- */
+.strip{position:sticky;top:56px;z-index:55;background:#0d0d0d;color:#fff;border-top:1px solid #222}
+.strip-in{max-width:1360px;margin:0 auto;padding:8px 22px;display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+.strip .cell{display:flex;flex-direction:column;min-width:120px}
+.strip .k{font:600 8.5px var(--sans);letter-spacing:.12em;color:#8a8a87;text-transform:uppercase}
+.strip .v{font:300 19px/1.15 var(--mono);color:#fff;white-space:nowrap}
+.strip .v b{font-weight:500;color:var(--d-green)}
+.strip .v small{font:400 10px var(--mono);color:#9d9d9a;margin-left:4px}
+.strip .band{font:400 10px var(--mono);color:#9d9d9a}
+.strip .go{margin-left:auto;background:var(--d-green);color:#000;border:0;border-radius:16px;font:700 11px var(--sans);padding:7px 16px;letter-spacing:.03em}
+
+/* ---------- shell ---------- */
+.shell{max-width:1360px;margin:0 auto;padding:20px 22px 60px;display:grid;grid-template-columns:250px 1fr;gap:22px;align-items:start}
+
+/* journey rail */
+nav.rail{position:sticky;top:126px;background:#fff;border:1px solid var(--d-line);border-radius:10px;padding:14px 0;overflow:hidden}
+.rail h2{font:700 9.5px var(--sans);letter-spacing:.14em;color:var(--d-gray);text-transform:uppercase;padding:2px 16px 10px}
+.railstep{display:flex;gap:11px;width:100%;background:none;border:0;text-align:left;padding:10px 16px;border-left:3px solid transparent;align-items:flex-start}
+.railstep:hover{background:#FAFAF8}
+.railstep.on{border-left-color:var(--d-green);background:#F4F8EA}
+.railstep .dot{flex:0 0 22px;height:22px;border-radius:50%;border:1.6px solid var(--d-gray-soft);font:600 10.5px var(--mono);display:flex;align-items:center;justify-content:center;color:var(--d-gray);margin-top:1px;background:#fff}
+.railstep.on .dot{border-color:var(--d-green-deep);background:var(--d-green-deep);color:#fff}
+.railstep.done .dot{border-color:var(--d-green);color:var(--d-green-deep)}
+.railstep .t{font:600 12.5px var(--sans);color:var(--d-ink)}
+.railstep .s{font:400 10.5px var(--sans);color:var(--d-gray);display:block;margin-top:1px}
+.rail .tick{border-top:1px solid var(--d-line);margin-top:10px;padding:12px 16px 2px}
+.rail .tick .k{font:600 8.5px var(--sans);letter-spacing:.12em;color:var(--d-gray);text-transform:uppercase}
+.rail .tick .v{font:300 17px var(--mono);color:var(--d-ink)}
+.rail .conf{padding:10px 16px 4px}
+.confbar{height:5px;border-radius:3px;background:var(--d-line);overflow:hidden;margin-top:5px}
+.confbar i{display:block;height:100%;background:linear-gradient(90deg,var(--d-warn),var(--d-green));border-radius:3px;transition:width .4s}
+.conf .k{font:600 8.5px var(--sans);letter-spacing:.12em;color:var(--d-gray);text-transform:uppercase}
+.conf .lbl{font:400 10.5px var(--sans);color:var(--d-gray);margin-top:4px}
+
+/* main panel */
+main{min-width:0}
+.step{display:none;background:#fff;border:1px solid var(--d-line);border-radius:10px}
+.step.on{display:block}
+.step-head{padding:22px 26px 16px;border-bottom:1px solid var(--d-line)}
+.step-head .eyebrow{font:700 9.5px var(--sans);letter-spacing:.16em;color:var(--d-green-deep);text-transform:uppercase}
+.step-head h3{font:700 20px var(--sans);letter-spacing:-.2px;margin-top:3px}
+.step-head p{color:var(--d-gray);font-size:12.5px;margin-top:5px;max-width:640px}
+.step-body{padding:20px 26px 26px}
+.stepnav{display:flex;justify-content:space-between;align-items:center;padding:14px 26px;border-top:1px solid var(--d-line);background:#FCFCFA;border-radius:0 0 10px 10px}
+.stepnav .hint{font-size:11.5px;color:var(--d-gray)}
+.btn{border:0;border-radius:18px;font:700 12px var(--sans);padding:9px 20px;letter-spacing:.02em}
+.btn.primary{background:var(--d-black);color:#fff}
+.btn.primary:hover{background:#222}
+.btn.ghost{background:transparent;color:var(--d-gray);border:1px solid var(--d-gray-soft)}
+.btn.green{background:var(--d-green);color:#000}
+.btn:disabled{opacity:.4;cursor:default}
+
+/* form primitives */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 20px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.lbl{font:600 12px var(--sans);color:var(--d-ink)}
+.lbl small{font-weight:400;color:var(--d-gray)}
+.help{font-size:11px;color:var(--d-gray);line-height:1.45}
+.pills{display:flex;gap:7px;flex-wrap:wrap}
+.pill{border:1.4px solid var(--d-gray-soft);background:#fff;border-radius:17px;padding:6px 15px;font:600 12px var(--sans);color:var(--d-gray)}
+.pill:hover{border-color:var(--d-gray)}
+.pill.on{background:var(--d-black);border-color:var(--d-black);color:#fff}
+.pill.on::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--d-green);margin-right:7px;vertical-align:1px}
+.why{background:#F4F8EA;border-left:3px solid var(--d-green);padding:9px 12px;border-radius:0 5px 5px 0;font-size:11.5px;color:#3d4a2a;margin-top:8px}
+.switch{position:relative;width:40px;height:22px;flex:0 0 40px}
+.switch input{opacity:0;width:0;height:0}
+.switch i{position:absolute;inset:0;background:var(--d-gray-soft);border-radius:12px;transition:.2s}
+.switch i::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.switch input:checked + i{background:var(--d-green-deep)}
+.switch input:checked + i::after{transform:translateX(18px)}
+.togglerow{display:flex;align-items:center;gap:10px}
+.slider-row{display:flex;align-items:center;gap:12px}
+input[type=range]{flex:1;accent-color:var(--d-green-deep);padding:0;border:0}
+.slider-val{font:500 13px var(--mono);color:var(--d-green-deep);min-width:44px;text-align:right}
+fieldset{border:1px solid var(--d-line);border-radius:8px;padding:14px 16px;margin-top:18px}
+legend{font:700 11px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--d-gray);padding:0 7px}
+.adv-tag{display:inline-block;font:600 9px var(--sans);letter-spacing:.08em;color:var(--d-blue);border:1px solid var(--d-blue);border-radius:3px;padding:1px 6px;vertical-align:2px;margin-left:6px}
+.adv{display:none}
+body.detailed .adv{display:block}
+tr.adv{display:none}
+body.detailed tr.adv{display:table-row}
+.quicknote{display:none;font-size:11.5px;color:var(--d-gray);margin-top:12px;padding:9px 12px;background:#FAFAF8;border-left:3px solid var(--d-gray-soft);border-radius:0 5px 5px 0}
+body:not(.detailed) .quicknote{display:block}
+
+/* tables */
+table.mini{width:100%;border-collapse:collapse;margin-top:8px}
+table.mini th{font:600 9.5px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--d-gray);text-align:left;padding:5px 8px;border-bottom:1px solid var(--d-line)}
+table.mini td{padding:5px 8px;border-bottom:1px solid #F0F0EE;font-size:12.5px}
+table.mini td input,table.mini td select{padding:4px 7px;font-size:12px}
+table.mini td.num input{font-family:var(--mono);text-align:right}
+.rowbtn{border:1px dashed var(--d-gray-soft);background:none;border-radius:5px;font:600 11px var(--sans);color:var(--d-gray);padding:5px 12px;margin-top:8px}
+
+/* engines */
+.engines{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.engine{border:1px solid var(--d-line);border-radius:8px;padding:12px 13px;background:#FCFCFA}
+.engine.off{opacity:.45}
+.engine .ehead{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.engine .ehead .nm{font:700 12px var(--sans)}
+.engine .ehead .cost{margin-left:auto;font:500 11.5px var(--mono);color:var(--d-green-deep)}
+.engine .egrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.engine label{font:600 10px var(--sans);color:var(--d-gray);display:block;margin-bottom:2px}
+
+/* assumptions studio */
+details.agroup{border:1px solid var(--d-line);border-radius:8px;margin-bottom:12px;background:#fff}
+details.agroup summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:13px 16px;font:700 13px var(--sans)}
+details.agroup summary::-webkit-details-marker{display:none}
+details.agroup summary .n{font:600 10px var(--mono);color:var(--d-green-deep);border:1px solid var(--d-green);border-radius:4px;padding:1px 6px}
+details.agroup summary .chev{margin-left:auto;color:var(--d-gray);transition:transform .2s;font-size:11px}
+details.agroup[open] summary .chev{transform:rotate(180deg)}
+details.agroup .abody{padding:4px 16px 16px}
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px 16px}
+.afield label{font:600 10.5px var(--sans);color:var(--d-gray);display:block;margin-bottom:3px;line-height:1.3}
+.afield input{font-family:var(--mono);font-size:12px;text-align:right;padding:5px 8px}
+.afield .u{font:400 9.5px var(--sans);color:#a8a8a4}
+.dirty{border-color:var(--d-warn) !important;background:#FFF9F0 !important}
+.abar{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.abar .note{font-size:11.5px;color:var(--d-gray)}
+
+/* results */
+.hero{background:var(--d-black);border-radius:10px;color:#fff;padding:22px 26px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--d-green)}
+.hero .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.kpi .k{font:600 9px var(--sans);letter-spacing:.14em;color:#9d9d9a;text-transform:uppercase}
+.kpi .v{font:300 30px/1.1 var(--mono);margin-top:5px;white-space:nowrap}
+.kpi .v small{font-size:13px;color:#9d9d9a}
+.kpi:first-child .v{color:var(--d-green)}
+.kpi .s{font:400 10.5px var(--sans);color:#9d9d9a;margin-top:4px}
+.hero .range{margin-top:14px;padding-top:12px;border-top:1px solid #262626;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hero .range .k{font:600 9px var(--sans);letter-spacing:.14em;color:#9d9d9a;text-transform:uppercase}
+.rangebar{flex:1;min-width:200px;height:7px;background:#262626;border-radius:4px;position:relative}
+.rangebar i{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,rgba(134,188,37,.35),var(--d-green),rgba(134,188,37,.35));border-radius:4px}
+.rangebar b{position:absolute;top:-3px;width:2.5px;height:13px;background:#fff;border-radius:1px}
+.hero .range .v{font:400 12px var(--mono);color:#d7d7d4}
+
+.card{background:#fff;border:1px solid var(--d-line);border-radius:10px;margin-top:16px}
+.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:16px 22px 4px}
+.card-head h4{font:700 15.5px var(--sans)}
+.card-head .tot{font:400 17px var(--mono);white-space:nowrap}
+.card-head .sub{font-size:11.5px;color:var(--d-gray);width:100%}
+.card-body{padding:8px 22px 18px}
+.brow{display:grid;grid-template-columns:minmax(180px,240px) 1fr 76px 110px;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #F0F0EE;font-size:12.5px}
+.brow:last-child{border-bottom:0}
+.brow .nm{font-weight:600}
+.brow .nm small{display:block;font-weight:400;color:var(--d-gray);font-size:10.5px;margin-top:1px}
+.brow .bar{height:9px;background:#F0F0EE;border-radius:5px;overflow:hidden}
+.brow .bar i{display:block;height:100%;background:var(--d-green-deep);border-radius:5px}
+.brow.neg .bar i{background:var(--d-green)}
+.brow .hrs{font:400 11.5px var(--mono);color:var(--d-gray);text-align:right;white-space:nowrap}
+.brow .amt{font:500 12.5px var(--mono);text-align:right;white-space:nowrap}
+.brow.neg .amt{color:var(--d-green-deep)}
+.trow{display:flex;justify-content:space-between;padding:12px 22px;border-top:1.6px solid var(--d-ink);font:700 13.5px var(--sans)}
+.trow .amt{font:600 14.5px var(--mono)}
+.compbar{display:flex;height:13px;border-radius:7px;overflow:hidden;margin:10px 0 6px}
+.compbar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:5px 16px;font-size:10.5px;color:var(--d-gray);margin-bottom:6px}
+.legend .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+.scen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px}
+.scen .sc{border:1px solid var(--d-line);border-radius:8px;padding:13px 15px;background:#FCFCFA}
+.scen .sc.on{border-color:var(--d-green-deep);background:#F4F8EA}
+.scen .sc .t{font:700 12px var(--sans)}
+.scen .sc .m{font:300 20px var(--mono);margin-top:4px}
+.scen .sc .d{font-size:10.5px;color:var(--d-gray);margin-top:3px}
+
+.warn{display:flex;gap:9px;background:#FFF6E8;border:1px solid #F3D9AE;border-radius:7px;padding:10px 13px;font-size:12px;color:#6b4b10;margin-top:9px;align-items:flex-start}
+.warn::before{content:"!";flex:0 0 17px;height:17px;border-radius:50%;background:var(--d-warn);color:#fff;font:700 11px/17px var(--sans);text-align:center;margin-top:1px}
+.insight{display:flex;gap:9px;background:#F4F8EA;border:1px solid #D9E7BC;border-radius:7px;padding:10px 13px;font-size:12px;color:#3d4a2a;margin-top:9px;align-items:flex-start}
+.insight::before{content:"→";flex:0 0 17px;color:var(--d-green-deep);font-weight:700}
+
+.tco{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+.tco .tc{border:1px solid var(--d-line);border-radius:8px;padding:12px 14px}
+.tco .k{font:600 9px var(--sans);letter-spacing:.12em;color:var(--d-gray);text-transform:uppercase}
+.tco .v{font:300 19px var(--mono);margin-top:4px;white-space:nowrap}
+.tco .d{font-size:10.5px;color:var(--d-gray);margin-top:2px}
+
+.interp{background:#0d0d0d;color:#e9e9e6;border-radius:8px;padding:13px 16px;font-size:12.5px;line-height:1.55;margin-bottom:6px}
+.interp b{color:var(--d-green);font-weight:600}
+.adv-sub{font:700 10px var(--sans);letter-spacing:.13em;text-transform:uppercase;color:var(--d-gray);margin:16px 0 2px}
+.nudge{display:grid;grid-template-columns:112px 1fr auto;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid #F0F0EE}
+.nudge:last-child{border-bottom:0}
+.nudge .chip{font:600 13px var(--mono);color:var(--d-green-deep);background:#F4F8EA;border:1px solid #D9E7BC;border-radius:7px;padding:7px 6px;text-align:center;line-height:1.15;white-space:nowrap}
+.nudge .chip small{display:block;font:700 7.5px var(--sans);letter-spacing:.08em;color:#6b7a4a;margin-top:2px;text-transform:uppercase}
+.nudge .nt{font:700 13px var(--sans)}
+.nudge .nw{font-size:12px;color:var(--d-gray);line-height:1.5;margin-top:2px}
+.nudge .caveat{font-size:11px;color:#8a6410;margin-top:4px}
+.nudge .caveat::before{content:"⚑ ";color:var(--d-warn)}
+.nudge .apply{align-self:center;border:1.4px solid var(--d-black);background:#fff;border-radius:16px;font:700 11px var(--sans);color:var(--d-ink);padding:7px 16px;white-space:nowrap}
+.nudge .apply:hover{background:var(--d-black);color:#fff}
+@media (max-width:1000px){ .nudge{grid-template-columns:1fr auto} .nudge .chip{grid-column:1/-1;justify-self:start;padding:5px 10px} }
+.exports{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.exports .btn{display:flex;align-items:center;gap:7px}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--d-black);color:#fff;border-radius:20px;padding:10px 22px;font:600 12px var(--sans);transition:transform .3s;z-index:99}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast b{color:var(--d-green)}
+
+@media (max-width:1000px){
+  .shell{grid-template-columns:1fr}
+  nav.rail{position:static;display:flex;flex-wrap:wrap;padding:6px}
+  .rail h2,.rail .tick,.rail .conf{display:none}
+  .railstep{width:auto;border-left:0;border-bottom:3px solid transparent;padding:8px 12px}
+  .railstep.on{border-bottom-color:var(--d-green)}
+  .railstep .s{display:none}
+  .grid2,.grid3,.engines,.hero .kpis,.scen,.tco{grid-template-columns:1fr}
+  .brow{grid-template-columns:1fr 70px 96px}
+  .brow .bar{display:none}
+}
+@media print{
+  header,.strip,nav.rail,.stepnav,.exports,.toast{display:none !important}
+  body{background:#fff}
+  .step{display:block !important;border:0;page-break-inside:avoid}
+  .shell{display:block;max-width:none;padding:0}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mast">
+    <div class="wordmark">Deloitte<span>.</span></div>
+    <div class="rule"></div>
+    <h1>AI Agent Cost Estimator <em>· AI &amp; Data · build &amp; run economics</em></h1>
+    <div class="spacer"></div>
+    <div class="seg" id="personaSeg" title="Choose how much detail you want to give">
+      <button id="modeQuick" class="on" type="button">Partner · quick</button>
+      <button id="modeDetailed" type="button">Architect · detailed</button>
+    </div>
+    <div class="seg">
+      <button id="curINR" class="on" type="button">₹ INR</button>
+      <button id="curUSD" type="button">$ USD</button>
+    </div>
+  </div>
+</header>
+
+<div class="strip">
+  <div class="strip-in">
+    <div class="cell"><span class="k">Build · one-time</span><span class="v" id="stripBuild">—</span></div>
+    <div class="cell"><span class="k">Run · per month</span><span class="v" id="stripRun">—</span></div>
+    <div class="cell"><span class="k">Per agent call</span><span class="v" id="stripCall">—</span></div>
+    <div class="cell"><span class="k">Estimate band</span><span class="band" id="stripBand">—</span></div>
+    <button class="go" id="stripGo" type="button">See full estimate →</button>
+  </div>
+</div>
+
+<div class="shell">
+
+  <nav class="rail" aria-label="Estimation journey">
+    <h2>The journey</h2>
+    <button class="railstep on" data-step="1"><span class="dot">1</span><span><span class="t">Frame the agent</span><span class="s">What is being built</span></span></button>
+    <button class="railstep" data-step="2"><span class="dot">2</span><span><span class="t">Cost to build</span><span class="s">Development levers</span></span></button>
+    <button class="railstep" data-step="3"><span class="dot">3</span><span><span class="t">Cost to run</span><span class="s">Models &amp; usage</span></span></button>
+    <button class="railstep" data-step="4"><span class="dot">4</span><span><span class="t">Assumptions</span><span class="s">Every rate, editable</span></span></button>
+    <button class="railstep" data-step="5"><span class="dot">5</span><span><span class="t">The estimate</span><span class="s">Review &amp; export</span></span></button>
+    <div class="tick">
+      <div class="k">Build so far</div><div class="v" id="railBuild">—</div>
+      <div class="k" style="margin-top:8px">Monthly run</div><div class="v" id="railRun">—</div>
+    </div>
+    <div class="conf">
+      <div class="k">Estimate confidence</div>
+      <div class="confbar"><i id="confFill" style="width:40%"></i></div>
+      <div class="lbl" id="confLbl">Quick inputs · ±35% band</div>
+    </div>
+  </nav>
+
+  <main>
+
+  <!-- ============ STEP 1 · FRAME ============ -->
+  <section class="step on" id="step1">
+    <div class="step-head">
+      <span class="eyebrow">Step 1 of 5</span>
+      <h3>Frame the agent</h3>
+      <p>Describe what is being built and how many agentic arms the orchestration has. Arm count drives both development effort and the number of inference engines paying for tokens at runtime.</p>
+    </div>
+    <div class="step-body">
+      <div class="field">
+        <span class="lbl">Agent description <small>· context for the report, does not affect the numbers</small></span>
+        <textarea id="desc" rows="3" placeholder="e.g. Procure-to-Pay invoicing agent with 3-way matching: validation, exception management and onward processing arms"></textarea>
+      </div>
+      <div class="grid3" style="margin-top:18px">
+        <div class="field">
+          <span class="lbl">Multi-agent architecture</span>
+          <div class="togglerow">
+            <label class="switch"><input type="checkbox" id="multiAgent" checked><i></i></label>
+            <span class="help" id="multiAgentHelp">Several specialised arms behind one orchestrator</span>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lbl" id="armsLbl">Agent arms in the orchestration</span>
+          <input type="number" id="arms" min="1" max="6" value="4">
+          <span class="help">Each arm is a distinct capability, e.g. validation, matching, exception handling</span>
+        </div>
+        <div class="field">
+          <span class="lbl">Arms reused from an agent library</span>
+          <input type="number" id="reusable" min="0" max="6" value="2">
+          <span class="help">Previously built arms your practice can redeploy</span>
+        </div>
+      </div>
+      <div class="field" style="margin-top:18px;max-width:520px">
+        <span class="lbl">Average reusability factor <small>· how much of a reused arm carries over</small></span>
+        <div class="slider-row">
+          <input type="range" id="reuseFactor" min="0" max="100" step="5" value="40">
+          <span class="slider-val" id="reuseFactorVal">40%</span>
+        </div>
+      </div>
+      <div class="why" id="frameWhy">4 arms with 2 reused at 40% ≈ 3 net workflows to build — reuse is typically the single biggest saving on the build.</div>
+    </div>
+    <div class="stepnav">
+      <span class="hint">Everything stays editable — the estimate updates live in the rail.</span>
+      <button class="btn primary" data-goto="2">Next · Cost to build →</button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 2 · BUILD ============ -->
+  <section class="step" id="step2">
+    <div class="step-head">
+      <span class="eyebrow">Step 2 of 5</span>
+      <h3>Cost to build</h3>
+      <p>Six levers set the development hours across the delivery pod. Pick the closest tier for each — the caption under every choice tells you what that tier assumes. Architects can override tool mix, workflows and pod shape below.</p>
+    </div>
+    <div class="step-body">
+      <div class="grid2">
+        <div class="field">
+          <span class="lbl">Proprietary data complexity</span>
+          <div class="pills" data-pills="dataComplexity"></div>
+          <span class="help" id="dataHelp"></span>
+        </div>
+        <div class="field">
+          <span class="lbl">Memory database complexity <small>· vector DB included by default</small></span>
+          <div class="pills" data-pills="memComplexity"></div>
+          <span class="help" id="memHelp"></span>
+        </div>
+        <div class="field">
+          <span class="lbl">Orchestration &amp; reasoning complexity</span>
+          <div class="pills" data-pills="orchComplexity"></div>
+          <span class="help" id="orchHelp"></span>
+        </div>
+        <div class="field">
+          <span class="lbl">External software integrations <small>· SAP, CRMs, enterprise systems</small></span>
+          <div class="pills" data-pills="swComplexity"></div>
+          <span class="help" id="swHelp"></span>
+        </div>
+        <div class="field">
+          <span class="lbl">Tool-calling complexity</span>
+          <div class="pills" data-pills="toolComplexity"></div>
+          <span class="help" id="toolHelp"></span>
+        </div>
+        <div class="field">
+          <span class="lbl">Front-end scope</span>
+          <div class="pills" data-pills="feComplexity"></div>
+          <span class="help" id="feHelp"></span>
+        </div>
+        <div class="field">
+          <span class="lbl">Deployment complexity <small>· High if GPU-hosting an SLM</small></span>
+          <div class="pills" data-pills="deployComplexity"></div>
+        </div>
+        <div class="field">
+          <span class="lbl">Deployment hyperscaler</span>
+          <select id="hyperscaler"><option>GCP</option><option>AWS</option><option>Azure</option></select>
+          <span class="help">Sets managed-container serving rates when no GPU is required</span>
+        </div>
+      </div>
+      <div class="why" id="buildWhy"></div>
+      <div class="quicknote">Quick mode assumes a 1-person pod (45 hrs/week), tools split per the complexity preset, and medium-complexity workflows. Switch to <b>Architect · detailed</b> in the masthead to override.</div>
+
+      <div class="adv">
+        <fieldset>
+          <legend>Tool mix <span class="adv-tag">Detailed</span></legend>
+          <table class="mini"><thead><tr><th>Tool type</th><th style="width:110px"># tools</th><th style="width:110px">Weeks / tool</th></tr></thead><tbody id="toolMixBody"></tbody></table>
+        </fieldset>
+        <fieldset>
+          <legend>Non-LLM workflow arms <span class="adv-tag">Detailed</span></legend>
+          <table class="mini"><thead><tr><th style="width:56px">On</th><th>Workflow</th><th style="width:150px">Complexity</th><th style="width:120px"># functionalities</th></tr></thead><tbody id="workflowBody"></tbody></table>
+        </fieldset>
+        <fieldset>
+          <legend>Delivery pod <span class="adv-tag">Detailed</span></legend>
+          <div class="grid3">
+            <div class="field"><span class="lbl">Managers</span><input type="number" id="podMgr" min="0" max="10" value="0"></div>
+            <div class="field"><span class="lbl">Senior consultants</span><input type="number" id="podSr" min="0" max="10" value="1"></div>
+            <div class="field"><span class="lbl">Consultants / analysts</span><input type="number" id="podCon" min="0" max="10" value="0"></div>
+          </div>
+          <span class="help" style="margin-top:8px;display:block">Pod size multiplies weekly delivery hours (45 hrs/person). The blended rate lives in Assumptions → Commercial.</span>
+        </fieldset>
+      </div>
+    </div>
+    <div class="stepnav">
+      <button class="btn ghost" data-goto="1">← Back</button>
+      <button class="btn primary" data-goto="3">Next · Cost to run →</button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 3 · RUN ============ -->
+  <section class="step" id="step3">
+    <div class="step-head">
+      <span class="eyebrow">Step 3 of 5</span>
+      <h3>Cost to run</h3>
+      <p>Pick the model, usage pattern and serving infrastructure. Rates come from a July-2026 price book across nine providers — every rate is editable in the Assumptions studio.</p>
+    </div>
+    <div class="step-body">
+      <div class="grid2">
+        <div class="field">
+          <span class="lbl">Model provider</span>
+          <select id="provider"></select>
+        </div>
+        <div class="field">
+          <span class="lbl">Model</span>
+          <select id="model"></select>
+          <span class="help" id="modelHelp"></span>
+        </div>
+        <div class="field">
+          <span class="lbl">Primary input / output modality</span>
+          <select id="modality"></select>
+        </div>
+        <div class="field">
+          <span class="lbl">Token usage per call</span>
+          <select id="tokenLevel"><option>Low</option><option selected>Low</option></select>
+          <span class="help" id="tokenHelp"></span>
+        </div>
+        <div class="field">
+          <span class="lbl">Project type &amp; users</span>
+          <select id="projectType"></select>
+          <span class="help" id="projHelp"></span>
+        </div>
+        <div class="field">
+          <span class="lbl">Evaluation approach</span>
+          <select id="evalType"><option>Human in Loop</option><option>LLM as a Judge</option><option>None</option></select>
+        </div>
+        <div class="field">
+          <span class="lbl">Operating hours per day</span>
+          <input type="number" id="hoursDay" min="1" max="24" value="14">
+        </div>
+        <div class="field">
+          <span class="lbl">Operational days per month</span>
+          <input type="number" id="daysMonth" min="1" max="31" value="25">
+        </div>
+      </div>
+
+      <fieldset>
+        <legend>Cost optimisation levers</legend>
+        <div class="grid2">
+          <div class="field">
+            <span class="lbl">Prompt-cache hit rate <small>· share of input tokens served from cache at ~10% price</small></span>
+            <div class="slider-row"><input type="range" id="cachePct" min="0" max="90" step="5" value="0"><span class="slider-val" id="cachePctVal">0%</span></div>
+            <span class="help">Agents resend system prompts and tool schemas every call — 50–80% is realistic once caching is wired in.</span>
+          </div>
+          <div class="field">
+            <span class="lbl">Batch-API share <small>· async calls at 50% discount</small></span>
+            <div class="slider-row"><input type="range" id="batchPct" min="0" max="100" step="5" value="0"><span class="slider-val" id="batchPctVal">0%</span></div>
+            <span class="help">Nightly summarisation, backfills and evals can run on batch endpoints.</span>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="field" style="margin-top:18px">
+        <span class="lbl">GPU required to host an SLM / non-LLM AI model</span>
+        <div class="togglerow">
+          <label class="switch"><input type="checkbox" id="gpuNeeded"><i></i></label>
+          <span class="help">Only when self-hosting open weights or specialised models</span>
+        </div>
+      </div>
+      <fieldset id="gpuBlock" hidden>
+        <legend>GPU serving</legend>
+        <div class="grid2">
+          <div class="field"><span class="lbl">GPU hardware</span><select id="gpuHw"></select></div>
+          <div class="field"><span class="lbl">Deployment style</span><select id="deployStyle"><option>Kubernetes</option><option>Serverless</option></select></div>
+          <div class="field adv"><span class="lbl">Concurrency of requests <span class="adv-tag">Detailed</span></span><input type="number" id="concurrency" min="1" max="200" value="2"></div>
+          <div class="field adv"><span class="lbl">Tokens/sec requirement <span class="adv-tag">Detailed</span></span><select id="tpsLevel"><option>Low</option><option selected>Medium</option><option>High</option></select></div>
+        </div>
+      </fieldset>
+
+      <div class="adv">
+        <fieldset>
+          <legend>Per-engine configuration <span class="adv-tag">Detailed</span></legend>
+          <span class="help">Each active arm is an inference engine. Give each its own model and invocation probability — the orchestrator (Engine 0) always fires.</span>
+          <div class="engines" id="enginesWrap"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Data pipeline &amp; storage <span class="adv-tag">Detailed</span></legend>
+          <div class="grid2">
+            <div class="field"><span class="lbl">Document parser</span><select id="parser"></select></div>
+            <div class="field"><span class="lbl">Embedding model</span><select id="embedModel"></select></div>
+            <div class="field"><span class="lbl">Vector store</span><select id="vectorStore"></select></div>
+            <div class="field"><span class="lbl">Search index pods</span><input type="number" id="searchPods" min="0" max="20" value="1"></div>
+          </div>
+        </fieldset>
+      </div>
+    </div>
+    <div class="stepnav">
+      <button class="btn ghost" data-goto="2">← Back</button>
+      <button class="btn primary" data-goto="4">Next · Assumptions →</button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 4 · ASSUMPTIONS ============ -->
+  <section class="step" id="step4">
+    <div class="step-head">
+      <span class="eyebrow">Step 4 of 5</span>
+      <h3>Assumptions studio</h3>
+      <p>Every rate, effort factor and price in the model, in one place. Edit anything — changed values are highlighted and flow straight through the estimate. Partners can skip this step; architects should pressure-test it.</p>
+    </div>
+    <div class="step-body">
+      <div class="abar">
+        <button class="btn ghost" id="resetAssump" type="button">Reset all to defaults</button>
+        <span class="note" id="dirtyCount">All values at defaults</span>
+      </div>
+      <div id="assumpWrap"></div>
+    </div>
+    <div class="stepnav">
+      <button class="btn ghost" data-goto="3">← Back</button>
+      <button class="btn green" data-goto="5">See the estimate →</button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 5 · ESTIMATE ============ -->
+  <section class="step" id="step5">
+    <div class="step-head">
+      <span class="eyebrow">Step 5 of 5</span>
+      <h3 id="estTitle">The estimate</h3>
+      <p id="estDesc">A defensible build + run view assembled from your answers. Export it, or walk back through any step — nothing is locked.</p>
+    </div>
+    <div class="step-body">
+
+      <div class="hero">
+        <div class="kpis">
+          <div class="kpi"><div class="k">Total build cost · one-time</div><div class="v" id="kBuild">—</div><div class="s" id="kBuildSub"></div></div>
+          <div class="kpi"><div class="k">Run cost · per month</div><div class="v" id="kRun">—</div><div class="s" id="kRunSub"></div></div>
+          <div class="kpi"><div class="k">Cost per agent call</div><div class="v" id="kCall">—</div><div class="s" id="kCallSub"></div></div>
+          <div class="kpi"><div class="k">Effort</div><div class="v" id="kHours">—</div><div class="s" id="kHoursSub"></div></div>
+        </div>
+        <div class="range">
+          <span class="k" id="rangeK">Confidence band</span>
+          <div class="rangebar"><i id="rangeFill"></i><b id="rangeMark"></b></div>
+          <span class="v" id="rangeTxt">—</span>
+        </div>
+      </div>
+
+      <div id="warnings"></div>
+
+      <div class="card">
+        <div class="card-head"><h4>Fixed cost of building</h4><span class="tot" id="fixedTot">—</span><span class="sub" id="fixedSub"></span></div>
+        <div class="card-body">
+          <div class="compbar" id="fixedComp"></div>
+          <div class="legend" id="fixedLegend"></div>
+          <div id="fixedRows"></div>
+        </div>
+        <div class="trow"><span>Total build cost</span><span class="amt" id="fixedTot2">—</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h4>Variable cost of running</h4><span class="tot" id="varTot">—</span><span class="sub" id="varSub"></span></div>
+        <div class="card-body">
+          <div class="compbar" id="varComp"></div>
+          <div class="legend" id="varLegend"></div>
+          <div id="varRows"></div>
+        </div>
+        <div class="trow"><span>Total per month</span><span class="amt" id="varTot2">—</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h4>Scale scenarios</h4><span class="sub">The same agent at POC, pilot and enterprise usage — only the traffic profile changes.</span></div>
+        <div class="card-body"><div class="scen" id="scenWrap"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h4>Year-1 total cost of ownership</h4><span class="tot" id="tcoTot">—</span><span class="sub">Build + contingency + 12 months of running + support &amp; maintenance. Percentages editable in Assumptions → Commercial.</span></div>
+        <div class="card-body"><div class="tco" id="tcoWrap"></div></div>
+      </div>
+
+      <div class="card" id="advisorCard">
+        <div class="card-head"><h4>Savings advisor</h4><span class="sub">Small, calculated moves read off your final estimate — each measured independently against the current numbers, not stacked.</span></div>
+        <div class="card-body">
+          <div class="interp" id="interp"></div>
+          <div id="nudgeRun"></div>
+          <div id="nudgeBuild"></div>
+        </div>
+      </div>
+
+      <div class="exports">
+        <button class="btn primary" id="dlReport" type="button">⬇ Download report (.html)</button>
+        <button class="btn ghost" id="dlCsv" type="button">⬇ Line items (.csv)</button>
+        <button class="btn ghost" id="printBtn" type="button">🖨 Print / PDF</button>
+        <button class="btn ghost" id="copyBtn" type="button">⧉ Copy summary</button>
+        <button class="btn ghost" id="resetAll" type="button" style="margin-left:auto">Start over</button>
+      </div>
+
+    </div>
+    <div class="stepnav">
+      <button class="btn ghost" data-goto="4">← Back to assumptions</button>
+      <span class="hint">Numbers are directional estimates for scoping conversations — validate with delivery leads before contracting.</span>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   ASSUMPTIONS — every number the model uses lives here, all editable
+   in the Assumptions studio (step 4). Defaults trace to the source
+   workbook (Costs_of_Building_Running_AIagents_v2.xlsx) plus a
+   July-2026 refresh of the public LLM price book.
+===================================================================== */
+const DEFAULT_A = () => ({
+  commercial: {
+    rate: 2200,            /* blended pod rate ₹/hr */
+    fx: 89,                /* ₹ per USD */
+    contingencyPct: 10,    /* % on build */
+    amcPct: 18,            /* support & maintenance, % of build labour / yr */
+    growthPct: 0           /* monthly run-cost growth over year 1 */
+  },
+  delivery: {
+    weekHours: 45,
+    designWeeks: 1,
+    swWeeksPerIntegration: 3,
+    kgWeeks: 2.6,
+    cacheWeeks: 3,
+    wfWeeksPerFunc: 0.5,
+    integrationFactor: 1.0,
+    integTestFactor: 0.3,
+    deployLowPct: 20,
+    deployHighPct: 30,
+    testPctSmall: 30, testPctMid: 20, testPctLarge: 15,
+    fePageWeeks: 0.5, feFeaturesPerPage: 2, feFeatureWeeks: 0.25,
+    toolWeeks: { api: 1, mcp: 1, custom: 2, build: 2 }
+  },
+  data: {
+    tiers: {
+      Simple:  { gb: 10, text: 70, tabular: 10, image: 10, audio: 10 },
+      Medium:  { gb: 15, text: 50, tabular: 30, image: 10, audio: 10 },
+      Complex: { gb: 30, text: 20, tabular: 40, image: 20, audio: 20 }
+    },
+    build: {
+      text:    { wk: 0.2, div: 10 },
+      tabular: { wk: 0.5, div: 10 },
+      audio:   { wk: 0.2, div: 50 },
+      image:   { wk: 0.4, div: 100 }
+    },
+    page: {
+      text:    { kb: 100, tokens: 900 },
+      tabular: { kb: 150, tokens: 1500 },
+      image:   { kb: 400, tokens: 900 },
+      audio:   { kb: 400, tokens: 900 }
+    }
+  },
+  infra: {
+    items: [
+      { name: "Blob storage (200 GB)",      frac: 0.1, weekly: 1670 },
+      { name: "SQL database",               frac: 0.2, weekly: 4175 },
+      { name: "Kubernetes (small cluster)", frac: 0.2, weekly: 8350 },
+      { name: "Serverless hosting",         frac: 0.1, weekly: 2505 },
+      { name: "App service",                frac: 0.2, weekly: 5845 },
+      { name: "Networking",                 frac: 0.1, weekly: 1670 },
+      { name: "Monitoring",                 frac: 0.1, weekly: 1252.5 }
+    ]
+  },
+  /* USD per 1M tokens — verified against provider pricing pages, July 2026 */
+  models: [
+    { p:"OpenAI", m:"GPT-5.5",            i:5,     o:30,   note:"Frontier · 1M ctx" },
+    { p:"OpenAI", m:"GPT-5.4",            i:2.5,   o:15,   note:"Production frontier" },
+    { p:"OpenAI", m:"GPT-5.4 nano",       i:0.2,   o:1.25, note:"Routing / extraction" },
+    { p:"OpenAI", m:"GPT-5.3 Codex",      i:1.75,  o:14,   note:"Coding agents" },
+    { p:"OpenAI", m:"GPT-5",              i:1.25,  o:10,   note:"Prev flagship" },
+    { p:"OpenAI", m:"GPT-4.1",            i:2,     o:8,    note:"1M ctx long-doc" },
+    { p:"OpenAI", m:"GPT-4.1 mini",       i:0.4,   o:1.6,  note:"Value long-context" },
+    { p:"OpenAI", m:"GPT-4.1 nano",       i:0.1,   o:0.4,  note:"Cheapest OpenAI" },
+    { p:"OpenAI", m:"GPT-4o",             i:2.5,   o:10,   note:"Legacy multimodal" },
+    { p:"OpenAI", m:"GPT-4o mini",        i:0.15,  o:0.6,  note:"Budget multimodal" },
+    { p:"OpenAI", m:"o3",                 i:2,     o:8,    note:"Reasoning (hidden tokens extra)" },
+    { p:"Anthropic", m:"Claude Fable 5",   i:10,   o:50,   note:"Top published tier" },
+    { p:"Anthropic", m:"Claude Opus 4.8",  i:5,    o:25,   note:"Flagship agents/coding" },
+    { p:"Anthropic", m:"Claude Sonnet 5",  i:2,    o:10,   note:"Intro to 31 Aug 26, then $3/$15" },
+    { p:"Anthropic", m:"Claude Sonnet 4.6",i:3,    o:15,   note:"1M ctx workhorse" },
+    { p:"Anthropic", m:"Claude Haiku 4.5", i:1,    o:5,    note:"High-volume tier" },
+    { p:"Google", m:"Gemini 3.1 Pro",      i:2,    o:12,   note:"2M ctx (2x >200K)" },
+    { p:"Google", m:"Gemini 3.5 Flash",    i:1.5,  o:9,    note:"Frontier-speed default" },
+    { p:"Google", m:"Gemini 3 Flash",      i:0.5,  o:3,    note:"Agentic value pick" },
+    { p:"Google", m:"Gemini 3.1 Flash-Lite",i:0.25,o:1.5,  note:"Cost tier" },
+    { p:"Google", m:"Gemini 2.5 Pro",      i:1.25, o:10,   note:"Prev-gen Pro" },
+    { p:"Google", m:"Gemini 2.5 Flash",    i:0.3,  o:2.5,  note:"Prev-gen Flash" },
+    { p:"Google", m:"Gemini 2.5 Flash-Lite",i:0.1, o:0.4,  note:"Cheapest Google" },
+    { p:"DeepSeek", m:"DeepSeek V4 Flash", i:0.14, o:0.28, note:"Cheapest flagship-class" },
+    { p:"Mistral", m:"Mistral Large 2",    i:2,    o:6,    note:"EU-hosted flagship" },
+    { p:"Mistral", m:"Mistral Small 4",    i:0.15, o:0.6,  note:"GDPR budget tier" },
+    { p:"Mistral", m:"Codestral",          i:0.2,  o:0.6,  note:"Code specialist" },
+    { p:"xAI", m:"Grok 4.20",              i:2,    o:6,    note:"Real-time X data" },
+    { p:"xAI", m:"Grok 4.1 Fast",          i:0.2,  o:0.5,  note:"Long-output friendly" },
+    { p:"Meta (hosted)", m:"Llama 4 Maverick",     i:0.15, o:0.6,  note:"Open weights via host" },
+    { p:"Meta (hosted)", m:"Llama 3.3 70B · Groq", i:0.59, o:0.79, note:"LPU speed 250+ tps" },
+    { p:"Amazon", m:"Nova Lite",           i:0.06, o:0.24, note:"Bedrock native" },
+    { p:"Amazon", m:"Nova Micro",          i:0.035,o:0.14, note:"Cheapest tracked" },
+    { p:"Cohere", m:"Command R+",          i:2.5,  o:10,   note:"RAG toolkit vendor" }
+  ],
+  cacheReadPct: 10,       /* cached input billed at % of standard */
+  batchDiscPct: 50,       /* batch endpoint discount % */
+  tokens: {
+    "Text":        { Low:{i:500,o:375},   Medium:{i:1000,o:750},  High:{i:1500,o:1125} },
+    "Text / Code": { Low:{i:750,o:562.5}, Medium:{i:1500,o:1125}, High:{i:2250,o:1687.5} },
+    "Image":       { Low:{i:1000,o:1000}, Medium:{i:2000,o:2000}, High:{i:3000,o:3000} },
+    "Audio":       { Low:{i:1000,o:1000}, Medium:{i:2000,o:2000}, High:{i:3000,o:3000} }
+  },
+  projects: {
+    "POC [ 5 to 10 users ]":     { rps: 2,  util: 25 },
+    "Pilot [ 10 to 50 users ]":  { rps: 10, util: 50 },
+    "Enterprise [ > 50 users ]": { rps: 50, util: 90 }
+  },
+  gpu: {
+    list: [
+      { name:"NVIDIA L4",          tps:700,  hr:0.6, sec:0.000222 },
+      { name:"NVIDIA A10G",        tps:1000, hr:1.2, sec:0.000306 },
+      { name:"NVIDIA A100 (40GB)", tps:2500, hr:2.5, sec:0.000583 },
+      { name:"NVIDIA A100 (80GB)", tps:3000, hr:3.2, sec:0.000694 },
+      { name:"NVIDIA H100",        tps:5500, hr:4.5, sec:0.001097 },
+      { name:"NVIDIA L40S",        tps:2200, hr:1.8, sec:0.000542 },
+      { name:"NVIDIA RTX 4090",    tps:1800, hr:1.2, sec:0.000094 }
+    ],
+    tpsLevels: { Low: 500, Medium: 1000, High: 2000 },
+    configMonthly: 84,
+    avgInferenceSec: 20,
+    serverlessStorage: 5,
+    flat: { GCP: 55.5, AWS: 80.5, Azure: 93.5 }
+  },
+  pipeline: {
+    parsers: [
+      { name:"Llama Index",             perPage:0.003 },
+      { name:"Google Document AI",      perPage:0.01 },
+      { name:"AWS Textract (advanced)", perPage:0.07 }
+    ],
+    embeds: [
+      { name:"OpenAI text-embedding-3-small", per1k:0.00002 },
+      { name:"OpenAI text-embedding-3-large", per1k:0.00013 },
+      { name:"Voyage voyage-multimodal-3",    per1k:0.00012 }
+    ],
+    vectors: [
+      { name:"Pinecone Serverless",   perGB:0.33 },
+      { name:"Zilliz Cloud (Milvus)", perGB:0.04 }
+    ]
+  },
+  storage: { kgPerGB: 65, searchPodHr: 0.24 },
+  obs: { loggingGB: 10, loggingRate: 0.1, traceRate: 0.001, evalSample: 0.0001, judgeRate: 0.005, humanRate: 0.5 }
+});
+
+let A = DEFAULT_A();
+
+/* fixed structural presets (tier meanings, not prices) */
+const MEMORY_TIERS = {
+  Simple:  { kg:false, cache:false, note:"Vector database + general storage only" },
+  Medium:  { kg:true,  cache:false, note:"Adds a knowledge-graph memory (Neo4j-class)" },
+  Complex: { kg:true,  cache:true,  note:"Knowledge graph + cache memory layers" }
+};
+const ORCH_TIERS = {
+  Simple:  { loops:1, weeks:1, note:"RAG / chain-of-thought · 1 reasoning loop per inference" },
+  Medium:  { loops:2, weeks:1, note:"ReACT / task decomposition · 2 reasoning loops" },
+  Complex: { loops:4, weeks:2, note:"Planning + reflection · 4 reasoning loops" }
+};
+const SW_TIERS   = { Simple:{n:1,note:"< 2 databases via APIs"}, Medium:{n:3,note:"3–5 integrations, API + MCP"}, Complex:{n:4,note:"> 5 integrations incl. microservices"} };
+const TOOL_TIERS = { Simple:{n:1,note:"< 2 tools over MCP"},     Medium:{n:3,note:"3–5 tools over APIs"},        Complex:{n:4,note:"> 5 tools mixing APIs and MCPs"} };
+const FE_TIERS   = { Simple:{pages:4,note:"Single page / low-code front end"}, Medium:{pages:10,note:"Up to 10 pages, ~20 features"}, Complex:{pages:20,note:"10+ pages, 20+ functionalities"} };
+const DATA_NOTES = { Simple:"Database skewed towards text · ~10 GB", Medium:"High tabular content · ~15 GB", Complex:"Heavy tabular + multimodal · ~30 GB" };
+const TOKEN_NOTES = {
+  "Text":        { Low:"Short tagging, intent detection, lightweight Q&A", Medium:"Summarisation, RAG look-ups, chat turns", High:"Multi-document reasoning, large-context synthesis" },
+  "Text / Code": { Low:"Generate or fix small functions", Medium:"Module-level generation, code review", High:"Large-repo analysis, multi-agent toolchains" },
+  "Image":       { Low:"Single-image captioning or tag extraction", Medium:"Visual Q&A, OCR, small-batch reasoning", High:"Multi-image understanding, layout analysis" },
+  "Audio":       { Low:"Voice commands, short-clip transcription", Medium:"Meeting or call summarisation", High:"Long-form transcription and diarisation" }
+};
+const MODALITIES = ["Text / Code","Text","Image","Audio"];
+const TOOL_TYPE_NAMES = { api:"Tool calling via APIs", mcp:"Tool calling via MCP / A2A", custom:"Custom code-generation tools", build:"Building MCP / A2A servers" };
+
+/* =====================================================================
+   STATE
+===================================================================== */
+const defaultState = () => ({
+  mode:"quick", currency:"INR", stepNo:1,
+  desc:"", multiAgent:true, arms:4, reusable:2, reuseFactor:0.4,
+  dataComplexity:"Medium", memComplexity:"Complex", orchComplexity:"Medium",
+  swComplexity:"Medium", toolComplexity:"Complex", feComplexity:"Complex",
+  deployComplexity:"Low", hyperscaler:"GCP",
+  provider:"OpenAI", model:"GPT-4o mini", modality:"Text / Code", tokenLevel:"Low",
+  cachePct:0, batchPct:0,
+  gpuNeeded:false, gpuHw:"NVIDIA L4", deployStyle:"Kubernetes", concurrency:2, tpsLevel:"Medium",
+  evalType:"Human in Loop", projectType:"POC [ 5 to 10 users ]",
+  hoursDay:14, daysMonth:25,
+  podMgr:0, podSr:1, podCon:0,
+  toolMix:null, workflows:null, engines:null,
+  parser:"Llama Index", embedModel:"OpenAI text-embedding-3-small",
+  vectorStore:"Pinecone Serverless", searchPods:1
+});
+let S = defaultState();
+let dirtyPaths = new Set();
+
+/* =====================================================================
+   HELPERS
+===================================================================== */
+const $ = id => document.getElementById(id);
+const el = (t,c,h) => { const e=document.createElement(t); if(c) e.className=c; if(h!=null) e.innerHTML=h; return e; };
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+const num = v => { const n=parseFloat(v); return isFinite(n)?n:0; };
+
+function fmtMoney(inr, cur, compact=true){
+  cur = cur || S.currency;
+  if(cur==="USD"){
+    const usd = inr / A.commercial.fx;
+    if(compact && Math.abs(usd)>=1e6) return "$"+(usd/1e6).toFixed(2)+"M";
+    if(compact && Math.abs(usd)>=1e3) return "$"+(usd/1e3).toFixed(1)+"K";
+    return "$"+usd.toLocaleString("en-US",{maximumFractionDigits:Math.abs(usd)<10?2:0});
+  }
+  if(compact && Math.abs(inr)>=1e7) return "₹"+(inr/1e7).toFixed(2)+" Cr";
+  if(compact && Math.abs(inr)>=1e5) return "₹"+(inr/1e5).toFixed(2)+" L";
+  return "₹"+Math.round(inr).toLocaleString("en-IN");
+}
+const fmtFull = inr => S.currency==="USD"
+  ? "$"+(inr/A.commercial.fx).toLocaleString("en-US",{maximumFractionDigits:(inr/A.commercial.fx)<100?2:0})
+  : "₹"+Math.round(inr).toLocaleString("en-IN");
+function fmtSmallUSD(u){ if(u===0)return"$0"; if(u<0.01)return"$"+u.toFixed(5); if(u<1)return"$"+u.toFixed(3); return "$"+u.toLocaleString("en-US",{maximumFractionDigits:2}); }
+const fmtNum = n => Math.round(n).toLocaleString("en-IN");
+
+function modelsFor(p){ return A.models.filter(x=>x.p===p); }
+function findModel(p,m){ return A.models.find(x=>x.p===p&&x.m===m) || A.models.find(x=>x.p===p) || A.models[0]; }
+function tokenFor(mod,lvl){ const t=(A.tokens[mod]||A.tokens["Text / Code"])[lvl]; return t||{i:750,o:562.5}; }
+const providers = () => [...new Set(A.models.map(x=>x.p))];
+
+function deriveEngines(){
+  const n = clamp(S.multiAgent?S.arms:1,1,6);
+  return Array.from({length:6},(_,k)=>({ on:k<n, provider:S.provider, model:S.model, modality:S.modality, tokenLevel:S.tokenLevel, prob:1 }));
+}
+function deriveToolMix(){ return { api:TOOL_TIERS[S.toolComplexity].n, mcp:0, custom:0, build:0 }; }
+function workflowCount(){ return clamp(Math.round((S.multiAgent?S.arms:1) - S.reusable*S.reuseFactor),0,6); }
+function deriveWorkflows(){
+  const n = workflowCount();
+  return Array.from({length:6},(_,k)=>({ on:k<n, complexity:"Medium", funcs:4 }));
+}
+const wfFuncs = { Simple:3, Medium:4, Complex:5 };
+
+/* =====================================================================
+   THE ENGINE — mirrors the workbook, reads every rate from A
+===================================================================== */
+function computeCore(projKey){
+  const C=A.commercial, D=A.delivery, rate=C.rate, fx=C.fx;
+  const arms = S.multiAgent ? Math.max(1,S.arms) : 1;
+  const podPeople = S.mode==="detailed" ? Math.max(1,S.podMgr+S.podSr+S.podCon) : 1;
+  const weekHours = D.weekHours * podPeople;
+
+  const dataT = A.data.tiers[S.dataComplexity];
+  const shares = { text:dataT.text/100, tabular:dataT.tabular/100, image:dataT.image/100, audio:dataT.audio/100 };
+  const memT = MEMORY_TIERS[S.memComplexity];
+  const orchT = ORCH_TIERS[S.orchComplexity];
+
+  const designHours = D.designWeeks * weekHours;
+
+  let memModalityHours = 0;
+  for(const k of Object.keys(A.data.build)){
+    const b=A.data.build[k];
+    memModalityHours += dataT.gb*shares[k]*b.wk/b.div*weekHours;
+  }
+  const memoryHours = memModalityHours + (memT.kg?D.kgWeeks*weekHours:0) + (memT.cache?D.cacheWeeks*weekHours:0);
+
+  const swN = SW_TIERS[S.swComplexity].n;
+  const swHours = swN * D.swWeeksPerIntegration * weekHours;
+  const orchHours = orchT.loops * orchT.weeks * weekHours;
+
+  const toolMix = (S.mode==="detailed"&&S.toolMix)?S.toolMix:deriveToolMix();
+  let toolHours=0, toolCount=0;
+  for(const k of Object.keys(D.toolWeeks)){ toolHours += (toolMix[k]||0)*D.toolWeeks[k]*weekHours; toolCount += (toolMix[k]||0); }
+
+  const wfs = (S.mode==="detailed"&&S.workflows)?S.workflows:deriveWorkflows();
+  const wfActive = wfs.filter(w=>w.on);
+  let nonLLMHours=0;
+  for(const w of wfActive) nonLLMHours += (w.funcs||0)*D.wfWeeksPerFunc*weekHours;
+
+  const componentHours = memoryHours+swHours+orchHours+toolHours+nonLLMHours;
+  const integrationHours = D.integrationFactor*componentHours;
+  const integTestHours   = D.integTestFactor*componentHours;
+  const coreDevHours = memoryHours+swHours+orchHours+toolHours+integrationHours;
+
+  const deployPct = (S.deployComplexity==="High"?D.deployHighPct:D.deployLowPct)/100;
+  const deployHours = deployPct*coreDevHours;
+  const fePages = FE_TIERS[S.feComplexity].pages;
+  const feHours = fePages*D.fePageWeeks*weekHours + fePages*D.feFeaturesPerPage*D.feFeatureWeeks*weekHours;
+  const tp = arms<=2?D.testPctSmall:arms<=5?D.testPctMid:D.testPctLarge;
+  const testEvalHours = tp/100*coreDevHours;
+
+  const devSubtotalHours = componentHours+integrationHours+integTestHours;
+  const effReuse = Math.min(S.reusable, arms);
+  const reuseSavedHours = arms>0 ? devSubtotalHours/arms*effReuse*S.reuseFactor : 0;
+
+  const grossHours = designHours+devSubtotalHours+deployHours+feHours+testEvalHours;
+  const netHours = Math.max(0, grossHours-reuseSavedHours);
+
+  const totalWeeks = coreDevHours/D.weekHours;
+  let buildInfraINR=0;
+  for(const it of A.infra.items) buildInfraINR += it.frac*totalWeeks*it.weekly;
+
+  /* one-time pipeline */
+  const gb = dataT.gb, bytesKB = gb*1024*1024;
+  const kbPerPage = shares.text*A.data.page.text.kb + shares.tabular*A.data.page.tabular.kb;
+  const pages = kbPerPage>0 ? bytesKB/kbPerPage : 0;
+  const parser = A.pipeline.parsers.find(x=>x.name===S.parser)||A.pipeline.parsers[0];
+  const parseUSD = pages*parser.perPage;
+  let embedTokens=0;
+  for(const k of Object.keys(A.data.page)) embedTokens += bytesKB*shares[k]/A.data.page[k].kb*A.data.page[k].tokens;
+  const embed = A.pipeline.embeds.find(x=>x.name===S.embedModel)||A.pipeline.embeds[0];
+  const embedUSD = embedTokens/1000*embed.per1k;
+  const pipelineINR = (parseUSD+embedUSD)*fx;
+
+  const H = h=>h*rate;
+  const laborINR = netHours*rate;
+  const fixedTotalINR = laborINR+buildInfraINR+pipelineINR;
+
+  /* ---------- variable ---------- */
+  const proj = A.projects[projKey||S.projectType] || Object.values(A.projects)[0];
+  const callsPerMonth = proj.rps*3600*S.hoursDay*S.daysMonth*(proj.util/100);
+
+  const engines = (S.mode==="detailed"&&S.engines)?S.engines:deriveEngines();
+  const loops = orchT.loops;
+  const cacheHit = S.cachePct/100, cacheRead = A.cacheReadPct/100;
+  const batchShare = S.batchPct/100, batchDisc = A.batchDiscPct/100;
+  let perCallUSD=0; const engineDetail=[];
+  engines.forEach((e,i)=>{
+    if(!e.on) return;
+    const md = findModel(e.provider,e.model);
+    const tk = tokenFor(e.modality,e.tokenLevel);
+    const inEff = tk.i*(1-cacheHit) + tk.i*cacheHit*cacheRead;
+    let c = (inEff*md.i/1e6 + tk.o*md.o/1e6*loops)*(e.prob??1);
+    c *= (1 - batchShare*batchDisc);
+    perCallUSD += c;
+    engineDetail.push({ idx:i, label:i===0?"Orchestrator":"Engine "+i, model:md.m, usd:c });
+  });
+  const llmMonthlyUSD = perCallUSD*callsPerMonth;
+
+  let computeUSD=0, computeSub="";
+  if(S.gpuNeeded){
+    const gpu = A.gpu.list.find(g=>g.name===S.gpuHw)||A.gpu.list[0];
+    if(S.deployStyle==="Kubernetes"){
+      const ttps = S.concurrency*(A.gpu.tpsLevels[S.tpsLevel]*2);
+      const nGPU = Math.max(1,Math.ceil(ttps/gpu.tps));
+      computeUSD = nGPU*gpu.hr*S.hoursDay*S.daysMonth + A.gpu.configMonthly;
+      computeSub = `${nGPU} × ${gpu.name} on Kubernetes + cluster config`;
+    } else {
+      computeUSD = A.gpu.avgInferenceSec*callsPerMonth*gpu.sec + A.gpu.serverlessStorage;
+      computeSub = `serverless ${gpu.name} · ${A.gpu.avgInferenceSec}s avg inference`;
+    }
+  } else {
+    computeUSD = A.gpu.flat[S.hyperscaler] ?? 55.5;
+    computeSub = `${S.hyperscaler} managed containers (no GPU)`;
+  }
+
+  const vstore = A.pipeline.vectors.find(v=>v.name===S.vectorStore)||A.pipeline.vectors[0];
+  const vdbUSD = vstore.perGB*gb;
+  const kgUSD = memT.kg ? A.storage.kgPerGB*gb : 0;
+  const searchUSD = Math.max(0,S.searchPods)*A.storage.searchPodHr*S.hoursDay*S.daysMonth;
+
+  const traces = callsPerMonth;
+  const loggingUSD = A.obs.loggingGB*A.obs.loggingRate;
+  const traceUSD = traces*A.obs.traceRate;
+  const firstOn = engines.find(e=>e.on)||engines[0];
+  const orchOut = tokenFor(firstOn.modality,firstOn.tokenLevel).o;
+  const judged = traces*orchOut*A.obs.evalSample;
+  const judgeUSD = S.evalType==="LLM as a Judge" ? judged*A.obs.judgeRate : 0;
+  const humanUSD = S.evalType==="Human in Loop" ? judged/1000*A.obs.humanRate : 0;
+  const obsUSD = loggingUSD+traceUSD+judgeUSD+humanUSD;
+
+  const varMonthlyUSD = llmMonthlyUSD+computeUSD+vdbUSD+kgUSD+searchUSD+obsUSD;
+
+  return {
+    weekHours, arms, orchT, memT, swN, toolCount, fePages, wfActive, toolMix,
+    designHours, memoryHours, swHours, orchHours, toolHours, nonLLMHours,
+    integrationHours, integTestHours, deployHours, feHours, testEvalHours,
+    reuseSavedHours, grossHours, netHours, totalWeeks,
+    laborINR, buildInfraINR, pipelineINR, fixedTotalINR,
+    pages, embedTokens,
+    proj, callsPerMonth, perCallUSD, engineDetail, loops,
+    llmMonthlyUSD, computeUSD, computeSub, vdbUSD, kgUSD, searchUSD, obsUSD,
+    varMonthlyUSD, varMonthlyINR: varMonthlyUSD*fx,
+    vstoreName: vstore.name, gb, tp, deployPct, H
+  };
+}
+
+function computeTCO(r){
+  const C=A.commercial;
+  const contingency = r.fixedTotalINR*C.contingencyPct/100;
+  const g = C.growthPct/100;
+  let run12=0, m=r.varMonthlyINR;
+  for(let k=0;k<12;k++){ run12+=m; m*= (1+g); }
+  const amc = r.laborINR*C.amcPct/100;
+  return { contingency, run12, amc, total: r.fixedTotalINR+contingency+run12+amc };
+}
+
+function confidence(){
+  /* quick = wide band; detailed narrows; touched assumptions narrow further */
+  let band = S.mode==="detailed" ? 15 : 35;
+  if(dirtyPaths.size>0) band = Math.max(10, band-5);
+  return band;
+}
+
+/* =====================================================================
+   SAVINGS ADVISOR — reads the final estimate, understands the agent
+   from its description, and computes concrete nudges by re-running the
+   engine on one-lever what-ifs. Nothing here mutates the base model.
+===================================================================== */
+function classifyAgent(desc){
+  const d=(desc||"").toLowerCase();
+  const has=(...ks)=>ks.some(k=>d.includes(k));
+  if(has("code","coding","developer","repo","programming","engineer","refactor","debug"))
+    return { label:"coding agent", hint:"Coding agents need a capable model on the generation arm, so downshift only the routing and retrieval arms.", coding:true };
+  if(has("invoice","procure","finance","account","back-office","back office","operations","ops ","report","document","compliance","claim","reconcil","ledger","p2p","o2c"))
+    return { label:"back-office automation agent", hint:"Back-office agents are usually high-volume and light on UI, so runtime tokens and front-end scope are the first places to trim.", backOffice:true };
+  if(has("chat","support","customer","assistant","conversation","helpdesk","service","concierge","faq"))
+    return { label:"customer-facing assistant", hint:"Customer-facing assistants resend the same system prompt on every turn, which makes prompt caching unusually effective.", customer:true };
+  if(has("research","analysis","analyst","search","insight","summar","knowledge","intelligence"))
+    return { label:"research & analysis agent", hint:"Research agents lean on large-context reads, so caching retrieved context and batching offline work pay off.", research:true };
+  return { label:"agent", hint:"The largest cost drivers are the best place to start.", generic:true };
+}
+
+/* run a one-lever what-if and restore every field afterwards */
+function whatIf(mut){
+  const snap = JSON.parse(JSON.stringify(S));
+  const aRate = A.commercial.rate;
+  try { mut(); return computeCore(); }
+  finally { Object.keys(snap).forEach(k=>S[k]=snap[k]); A.commercial.rate=aRate; }
+}
+function baseEngines(){ return (S.mode==="detailed"&&S.engines)?S.engines.map(e=>({...e})):deriveEngines(); }
+
+function computeNudges(r){
+  const util = classifyAgent(S.desc);
+  const run=[], build=[];
+  const M = inr=>fmtMoney(inr);
+  const cur = findModel(S.provider,S.model);
+  const llmShare = r.varMonthlyUSD>0 ? r.llmMonthlyUSD/r.varMonthlyUSD : 0;
+
+  /* RUN — route worker arms to a cheaper, still-capable model */
+  const pref = util.coding
+    ? ["Claude Haiku 4.5","GPT-4.1 mini","DeepSeek V4 Flash","Gemini 3 Flash"]
+    : ["Gemini 3 Flash","Claude Haiku 4.5","DeepSeek V4 Flash","Gemini 2.5 Flash","GPT-4.1 mini"];
+  let target=null;
+  for(const nm of pref){ const m=A.models.find(x=>x.m===nm); if(m && m.m!==cur.m && m.o<=cur.o*0.7){ target=m; break; } }
+  if(target && llmShare>=0.35){
+    const engs=baseEngines(); const on=engs.filter(e=>e.on); const multi=on.length>1;
+    const alt=whatIf(()=>{ S.mode="detailed"; S.engines=engs.map((e,i)=>{ const w=multi? i>0 : true; return {...e, provider:w?target.p:e.provider, model:w?target.m:e.model}; }); });
+    const save=r.varMonthlyINR-alt.varMonthlyINR;
+    if(save/r.varMonthlyINR>=0.03) run.push({
+      inr:save, unit:"mo",
+      title: multi ? `Route the worker arms to ${target.m}` : `Switch the model to ${target.m}`,
+      why: multi
+        ? `LLM calls are ${Math.round(llmShare*100)}% of the run cost. Keep the orchestrator on ${cur.m} for judgement, but send the ${on.length-1} worker arm${on.length-1!==1?"s":""} to ${target.m} — $${target.i}/$${target.o} per 1M vs $${cur.i}/$${cur.o}.`
+        : `LLM calls are ${Math.round(llmShare*100)}% of the run cost. ${target.m} runs at $${target.i}/$${target.o} per 1M against ${cur.m}'s $${cur.i}/$${cur.o}.`,
+      caveat: util.coding ? "Validate code quality on a sample before committing the switch." : "Validate answer quality on a sample of real traffic first.",
+      apply:()=>{ document.body.classList.add("detailed"); $("modeDetailed").classList.add("on"); $("modeQuick").classList.remove("on"); S.mode="detailed"; const es=baseEngines(); const m2=es.filter(e=>e.on).length>1; S.engines=es.map((e,i)=>{ const w=m2? i>0:true; return {...e, provider:w?target.p:e.provider, model:w?target.m:e.model}; }); renderDetailTables(); update(); toast(`Applied — worker arms on <b>${target.m}</b>`); }
+    });
+  }
+
+  /* RUN — prompt caching */
+  if(S.cachePct<50 && r.llmMonthlyUSD>0){
+    const alt=whatIf(()=>{S.cachePct=60;});
+    const save=r.varMonthlyINR-alt.varMonthlyINR;
+    if(save/r.varMonthlyINR>=0.02) run.push({
+      inr:save, unit:"mo",
+      title:"Turn on prompt caching at a ~60% hit rate",
+      why:`Every call resends the system prompt, tool schemas and few-shot examples. Caching those input tokens bills them at ${A.cacheReadPct}% of list.${util.customer?" A customer-facing assistant repeats the same system prompt on every turn, so this lands hard.":""}`,
+      caveat:null,
+      apply:()=>{ S.cachePct=60; $("cachePct").value=60; $("cachePctVal").textContent="60%"; update(); toast("Applied — <b>60%</b> prompt-cache hits"); }
+    });
+  }
+
+  /* RUN — batch API for async slice */
+  if(S.batchPct<25 && r.llmMonthlyUSD>0){
+    const alt=whatIf(()=>{S.batchPct=30;});
+    const save=r.varMonthlyINR-alt.varMonthlyINR;
+    if(save/r.varMonthlyINR>=0.02) run.push({
+      inr:save, unit:"mo",
+      title:"Move ~30% of calls to the batch API",
+      why:`Latency-tolerant work — nightly summarisation, evals, backfills${util.research?", bulk document analysis":""} — can run on batch endpoints at a ${A.batchDiscPct}% discount.`,
+      caveat:"Batch responses aren't real-time; only shift offline traffic.",
+      apply:()=>{ S.batchPct=30; $("batchPct").value=30; $("batchPctVal").textContent="30%"; update(); toast("Applied — <b>30%</b> batch share"); }
+    });
+  }
+
+  /* RUN — serverless GPU when idle */
+  if(S.gpuNeeded && S.deployStyle==="Kubernetes" && r.proj.util<50){
+    const alt=whatIf(()=>{S.deployStyle="Serverless";});
+    const save=r.varMonthlyINR-alt.varMonthlyINR;
+    if(save/r.varMonthlyINR>=0.03) run.push({
+      inr:save, unit:"mo",
+      title:"Serve the self-hosted model serverlessly",
+      why:`At ${r.proj.util}% utilisation a dedicated Kubernetes GPU is idle most of the day. A serverless GPU bills per inference second instead.`,
+      caveat:"Cold starts add latency — fine for bursty or async traffic.",
+      apply:()=>{ S.deployStyle="Serverless"; $("deployStyle").value="Serverless"; update(); toast("Applied — <b>serverless</b> GPU serving"); }
+    });
+  }
+
+  /* RUN + BUILD — drop knowledge graph when it dominates */
+  if(r.memT.kg && r.kgUSD/r.varMonthlyUSD>=0.2){
+    const alt=whatIf(()=>{S.memComplexity="Simple";});
+    const saveRun=r.varMonthlyINR-alt.varMonthlyINR;
+    const saveBuild=r.fixedTotalINR-alt.fixedTotalINR;
+    if(saveRun/r.varMonthlyINR>=0.05) run.push({
+      inr:saveRun, unit:"mo",
+      title:"Drop to vector-only memory if the graph isn't essential",
+      why:`The knowledge-graph store is ${Math.round(r.kgUSD/r.varMonthlyUSD*100)}% of the run cost. Many ${util.label}s do fine on vector search alone — the Simple tier also trims ${M(saveBuild)} of build effort.`,
+      caveat:"Keep the graph if you rely on multi-hop relationship queries.",
+      apply:()=>{ S.memComplexity="Simple"; renderPills(); syncHelps(); update(); toast("Applied — <b>vector-only</b> memory"); }
+    });
+  }
+
+  /* BUILD — AI-augmented staffing: consultant + AI instead of senior-only */
+  {
+    const reduction=0.12; const newRate=Math.round(A.commercial.rate*(1-reduction));
+    const save=r.netHours*(A.commercial.rate-newRate);
+    if(save/r.fixedTotalINR>=0.02) build.push({
+      inr:save, unit:"once",
+      title:"Pair a consultant with AI tooling instead of senior-only staffing",
+      why:`On the automatable lines — front-end, tool and software integration, deterministic workflows — a consultant with coding agents can cover senior-level work. Modelled as a ${Math.round(reduction*100)}% lower blended rate (₹${fmtNum(A.commercial.rate)}→₹${fmtNum(newRate)}/hr across ${fmtNum(r.netHours)} hrs).`,
+      caveat:"Assumes your delivery playbook already bakes in AI-assisted development.",
+      apply:()=>{ A.commercial.rate=newRate; markDirty("commercial.rate"); const inp=document.querySelector('input[data-apath="commercial.rate"]'); if(inp){ inp.value=newRate; inp.classList.add("dirty"); } update(); toast(`Applied — blended rate <b>₹${fmtNum(newRate)}/hr</b>`); }
+    });
+  }
+
+  /* BUILD — reuse one more arm */
+  if(S.reusable < r.arms){
+    const alt=whatIf(()=>{ S.reusable=Math.min(r.arms,S.reusable+1); S.workflows=null; });
+    const save=r.fixedTotalINR-alt.fixedTotalINR;
+    if(save/r.fixedTotalINR>=0.02) build.push({
+      inr:save, unit:"once",
+      title:"Reuse one more arm from the library",
+      why:`You're reusing ${S.reusable} of ${r.arms} arms. Sourcing one more from an existing agent library — or lifting the reuse factor above ${Math.round(S.reuseFactor*100)}% — drops straight out of the build.`,
+      caveat:null,
+      apply:()=>{ S.reusable=Math.min(r.arms,S.reusable+1); S.workflows=null; $("reusable").value=S.reusable; syncHelps(); renderDetailTables(); update(); toast(`Applied — <b>${S.reusable}</b> arms reused`); }
+    });
+  }
+
+  /* BUILD — lean front end */
+  if(S.feComplexity==="Complex"){
+    const alt=whatIf(()=>{S.feComplexity="Medium";});
+    const save=r.fixedTotalINR-alt.fixedTotalINR;
+    if(save/r.fixedTotalINR>=0.03) build.push({
+      inr:save, unit:"once",
+      title:"Ship a leaner front end",
+      why:`Front-end build is ${M(r.H(r.feHours))} of the estimate. ${util.backOffice?"A back-office agent rarely needs 20+ custom pages — a 10-page low-code UI ":"A 10-page front end "}covers most internal workflows.`,
+      caveat:"Keep it Complex if end-users are external or the UI is the product.",
+      apply:()=>{ S.feComplexity="Medium"; renderPills(); syncHelps(); update(); toast("Applied — <b>Medium</b> front-end scope"); }
+    });
+  }
+
+  run.sort((a,b)=>b.inr-a.inr); build.sort((a,b)=>b.inr-a.inr);
+  const topRun=run.slice(0,3), topBuild=build.slice(0,3);
+
+  const ranked=[...topRun,...topBuild].sort((a,b)=>(b.unit==="mo"?b.inr*12:b.inr)-(a.unit==="mo"?a.inr*12:a.inr));
+  let interp;
+  if(ranked.length){
+    const t=ranked[0];
+    interp=`This reads as a <b>${util.label}</b>. ${util.hint} On the current numbers the highest-value move is to <b>${t.title.charAt(0).toLowerCase()+t.title.slice(1)}</b> — about ${M(t.inr)}${t.unit==="mo"?" a month":" one-time"}.`;
+  } else {
+    interp=`This reads as a <b>${util.label}</b>. The estimate is already lean on the levers this advisor checks — model routing, caching, batching, staffing mix, reuse and front-end scope are all in a sensible place.`;
+  }
+  return { interp, run:topRun, build:topBuild };
+}
+
+function renderNudges(){
+  const r=computeCore();
+  const {interp,run,build}=computeNudges(r);
+  $("interp").innerHTML=interp;
+  const fill=(host,list)=>{
+    for(const n of list){
+      const row=el("div","nudge");
+      row.appendChild(el("div","chip",`${fmtMoney(n.inr)}<small>${n.unit==="mo"?"save / mo":"save once"}</small>`));
+      const mid=el("div","nmid");
+      mid.appendChild(el("div","nt",n.title));
+      mid.appendChild(el("div","nw",n.why));
+      if(n.caveat) mid.appendChild(el("div","caveat",n.caveat));
+      row.appendChild(mid);
+      if(n.apply){ const b=el("button","apply","Apply"); b.type="button"; b.onclick=n.apply; row.appendChild(b); }
+      host.appendChild(row);
+    }
+  };
+  const rh=$("nudgeRun"); rh.innerHTML="";
+  if(run.length){ rh.appendChild(el("div","adv-sub","Run-cost nudges · per month")); fill(rh,run); }
+  const bh=$("nudgeBuild"); bh.innerHTML="";
+  if(build.length){ bh.appendChild(el("div","adv-sub","Build-cost nudges · one-time")); fill(bh,build); }
+}
+
+/* =====================================================================
+   RENDER — steps, pills, engines, assumptions, results
+===================================================================== */
+const PILL_DATA = {
+  dataComplexity:["Simple","Medium","Complex"], memComplexity:["Simple","Medium","Complex"],
+  orchComplexity:["Simple","Medium","Complex"], swComplexity:["Simple","Medium","Complex"],
+  toolComplexity:["Simple","Medium","Complex"], feComplexity:["Simple","Medium","Complex"],
+  deployComplexity:["Low","High"]
+};
+function renderPills(){
+  document.querySelectorAll("[data-pills]").forEach(wrap=>{
+    const key=wrap.dataset.pills;
+    wrap.innerHTML="";
+    for(const opt of PILL_DATA[key]){
+      const b=el("button","pill"+(S[key]===opt?" on":""),opt);
+      b.type="button";
+      b.onclick=()=>{ S[key]=opt; if(key==="toolComplexity") S.toolMix=null; renderPills(); syncHelps(); renderDetailTables(); update(); };
+      wrap.appendChild(b);
+    }
+  });
+}
+function syncHelps(){
+  $("dataHelp").textContent = DATA_NOTES[S.dataComplexity];
+  $("memHelp").textContent  = MEMORY_TIERS[S.memComplexity].note;
+  $("orchHelp").textContent = ORCH_TIERS[S.orchComplexity].note;
+  $("swHelp").textContent   = SW_TIERS[S.swComplexity].note;
+  $("toolHelp").textContent = TOOL_TIERS[S.toolComplexity].note;
+  $("feHelp").textContent   = FE_TIERS[S.feComplexity].note;
+  const md = findModel(S.provider,S.model);
+  $("modelHelp").textContent = `$${md.i} in / $${md.o} out per 1M tokens · ${md.note||""}`;
+  const tk = tokenFor(S.modality,S.tokenLevel);
+  $("tokenHelp").textContent = `${fmtNum(tk.i)} in / ${fmtNum(tk.o)} out tokens per call · ${(TOKEN_NOTES[S.modality]||{})[S.tokenLevel]||""}`;
+  const pr = A.projects[S.projectType];
+  $("projHelp").textContent = `peak ${pr.rps} req/s at ${pr.util}% utilisation`;
+  $("armsLbl").textContent = S.multiAgent ? "Agent arms in the orchestration" : "Single agent (1 engine)";
+  $("multiAgentHelp").textContent = S.multiAgent ? "Several specialised arms behind one orchestrator" : "One agent, one inference engine";
+  const netWf = workflowCount();
+  $("frameWhy").textContent = `${S.multiAgent?S.arms:1} arm${(S.multiAgent?S.arms:1)!==1?"s":""} with ${S.reusable} reused at ${Math.round(S.reuseFactor*100)}% ≈ ${netWf} net workflow${netWf!==1?"s":""} to build — reuse is typically the single biggest saving on the build.`;
+  const r = computeCore();
+  $("buildWhy").textContent = `These choices currently produce ${fmtNum(r.netHours)} pod-hours ≈ ${r.totalWeeks.toFixed(0)} core build weeks. Workflow integration (stitching the arms) is the largest single line — it scales 1:1 with component effort.`;
+}
+
+function fillSelect(sel, items, current){
+  sel.innerHTML="";
+  for(const it of items){ const o=el("option",null,it); o.value=it; sel.appendChild(o); }
+  if(current && items.includes(current)) sel.value=current;
+}
+function renderModelSelectors(){
+  fillSelect($("provider"), providers(), S.provider);
+  const ms = modelsFor(S.provider).map(x=>x.m);
+  if(!ms.includes(S.model)) S.model = ms[0];
+  fillSelect($("model"), ms, S.model);
+  fillSelect($("modality"), MODALITIES, S.modality);
+  fillSelect($("tokenLevel"), ["Low","Medium","High"], S.tokenLevel);
+  fillSelect($("projectType"), Object.keys(A.projects), S.projectType);
+  fillSelect($("gpuHw"), A.gpu.list.map(g=>g.name), S.gpuHw);
+  fillSelect($("parser"), A.pipeline.parsers.map(x=>x.name), S.parser);
+  fillSelect($("embedModel"), A.pipeline.embeds.map(x=>x.name), S.embedModel);
+  fillSelect($("vectorStore"), A.pipeline.vectors.map(x=>x.name), S.vectorStore);
+}
+
+function renderDetailTables(){
+  /* tool mix */
+  const tm = S.toolMix || deriveToolMix();
+  const tb = $("toolMixBody"); tb.innerHTML="";
+  for(const k of Object.keys(TOOL_TYPE_NAMES)){
+    const tr = el("tr");
+    tr.appendChild(el("td",null,TOOL_TYPE_NAMES[k]));
+    const tdN = el("td","num"); const inN = el("input"); inN.type="number"; inN.min=0; inN.max=20; inN.value=tm[k]||0;
+    inN.onchange=()=>{ S.toolMix = S.toolMix||{...tm}; S.toolMix[k]=clamp(num(inN.value),0,20); update(); };
+    tdN.appendChild(inN); tr.appendChild(tdN);
+    const tdW = el("td","num"); const inW = el("input"); inW.type="number"; inW.step="0.5"; inW.min=0; inW.value=A.delivery.toolWeeks[k];
+    inW.onchange=()=>{ A.delivery.toolWeeks[k]=Math.max(0,num(inW.value)); markDirty("delivery.toolWeeks."+k); update(); };
+    tdW.appendChild(inW); tr.appendChild(tdW);
+    tb.appendChild(tr);
+  }
+  /* workflows */
+  const wfs = S.workflows || deriveWorkflows();
+  const wb = $("workflowBody"); wb.innerHTML="";
+  wfs.forEach((w,i)=>{
+    const tr = el("tr");
+    const tdOn = el("td");
+    const sw = el("label","switch"); const cb=el("input"); cb.type="checkbox"; cb.checked=w.on;
+    cb.onchange=()=>{ S.workflows=S.workflows||wfs.map(x=>({...x})); S.workflows[i].on=cb.checked; update(); };
+    sw.appendChild(cb); sw.appendChild(el("i")); tdOn.appendChild(sw); tr.appendChild(tdOn);
+    tr.appendChild(el("td",null,"Workflow "+(i+1)));
+    const tdC=el("td"); const selC=el("select");
+    for(const c of ["Simple","Medium","Complex"]){ const o=el("option",null,c); selC.appendChild(o); }
+    selC.value=w.complexity;
+    selC.onchange=()=>{ S.workflows=S.workflows||wfs.map(x=>({...x})); S.workflows[i].complexity=selC.value; S.workflows[i].funcs=wfFuncs[selC.value]; renderDetailTables(); update(); };
+    tdC.appendChild(selC); tr.appendChild(tdC);
+    const tdF=el("td","num"); const inF=el("input"); inF.type="number"; inF.min=0; inF.max=30; inF.value=w.funcs;
+    inF.onchange=()=>{ S.workflows=S.workflows||wfs.map(x=>({...x})); S.workflows[i].funcs=clamp(num(inF.value),0,30); update(); };
+    tdF.appendChild(inF); tr.appendChild(tdF);
+    wb.appendChild(tr);
+  });
+  renderEngines();
+}
+
+function renderEngines(){
+  const engines = S.engines || deriveEngines();
+  const wrap = $("enginesWrap"); wrap.innerHTML="";
+  const r = computeCore();
+  engines.forEach((e,i)=>{
+    const card = el("div","engine"+(e.on?"":" off"));
+    const head = el("div","ehead");
+    const sw = el("label","switch"); const cb=el("input"); cb.type="checkbox"; cb.checked=e.on;
+    cb.onchange=()=>{ ensureEngines(engines); S.engines[i].on=cb.checked; renderDetailTables(); update(); };
+    sw.appendChild(cb); sw.appendChild(el("i"));
+    head.appendChild(sw);
+    head.appendChild(el("span","nm", i===0?"Orchestrator":"Engine "+i));
+    const det = r.engineDetail.find(d=>d.idx===i);
+    head.appendChild(el("span","cost", det?fmtSmallUSD(det.usd)+" / call":""));
+    card.appendChild(head);
+    const g = el("div","egrid");
+    const mkSel=(lbl,items,val,cb2)=>{
+      const wrap2=el("div"); wrap2.appendChild(el("label",null,lbl));
+      const s=el("select"); for(const it of items){const o=el("option",null,it);s.appendChild(o);} s.value=val;
+      s.onchange=()=>cb2(s.value); wrap2.appendChild(s); return wrap2;
+    };
+    g.appendChild(mkSel("Provider",providers(),e.provider,v=>{ ensureEngines(engines); S.engines[i].provider=v; const ms=modelsFor(v).map(x=>x.m); if(!ms.includes(S.engines[i].model)) S.engines[i].model=ms[0]; renderDetailTables(); update(); }));
+    g.appendChild(mkSel("Model",modelsFor(e.provider).map(x=>x.m),e.model,v=>{ ensureEngines(engines); S.engines[i].model=v; renderDetailTables(); update(); }));
+    g.appendChild(mkSel("Modality",MODALITIES,e.modality,v=>{ ensureEngines(engines); S.engines[i].modality=v; renderDetailTables(); update(); }));
+    g.appendChild(mkSel("Tokens / call",["Low","Medium","High"],e.tokenLevel,v=>{ ensureEngines(engines); S.engines[i].tokenLevel=v; renderDetailTables(); update(); }));
+    const pw=el("div"); pw.appendChild(el("label",null,"Invocation probability"));
+    const pin=el("input"); pin.type="number"; pin.min=0; pin.max=1; pin.step=0.05; pin.value=e.prob;
+    pin.onchange=()=>{ ensureEngines(engines); S.engines[i].prob=clamp(num(pin.value),0,1); renderDetailTables(); update(); };
+    pw.appendChild(pin); g.appendChild(pw);
+    card.appendChild(g);
+    wrap.appendChild(card);
+  });
+}
+function ensureEngines(base){ if(!S.engines) S.engines = base.map(x=>({...x})); }
+
+/* ---------- assumptions studio ---------- */
+function markDirty(path){ dirtyPaths.add(path); $("dirtyCount").textContent = dirtyPaths.size+" value"+(dirtyPaths.size!==1?"s":"")+" overridden"; }
+function getPath(obj,path){ return path.split(".").reduce((o,k)=>o[k],obj); }
+function setPath(obj,path,v){ const ks=path.split("."); const last=ks.pop(); ks.reduce((o,k)=>o[k],obj)[last]=v; }
+
+function aField(label, path, unit, step){
+  const w=el("div","afield");
+  const lb=el("label",null,label+(unit?` <span class="u">${unit}</span>`:""));
+  const inp=el("input"); inp.type="number"; inp.step=step||"any"; inp.value=getPath(A,path);
+  inp.dataset.apath=path;
+  if(dirtyPaths.has(path)) inp.classList.add("dirty");
+  inp.onchange=()=>{ setPath(A,path,num(inp.value)); markDirty(path); inp.classList.add("dirty"); update(); syncHelps(); };
+  w.appendChild(lb); w.appendChild(inp);
+  return w;
+}
+function aGroup(n, title, sub){
+  const d=el("details","agroup");
+  const s=el("summary");
+  s.appendChild(el("span","n",n));
+  s.appendChild(el("span",null,title+(sub?` <span style="font-weight:400;color:var(--d-gray);font-size:11px">· ${sub}</span>`:"")));
+  s.appendChild(el("span","chev","▾"));
+  d.appendChild(s);
+  const b=el("div","abody");
+  d.appendChild(b);
+  return {d,b};
+}
+
+function buildAssumptions(){
+  const wrap=$("assumpWrap"); wrap.innerHTML="";
+
+  let g = aGroup("A","Commercial","rates, contingency, support");
+  let grid=el("div","agrid");
+  grid.appendChild(aField("Blended pod rate","commercial.rate","₹ / hr","50"));
+  grid.appendChild(aField("FX rate","commercial.fx","₹ per USD","0.5"));
+  grid.appendChild(aField("Contingency on build","commercial.contingencyPct","%","1"));
+  grid.appendChild(aField("Support & maintenance (AMC)","commercial.amcPct","% of build labour / yr","1"));
+  grid.appendChild(aField("Monthly run-cost growth","commercial.growthPct","% / month, year 1","1"));
+  g.b.appendChild(grid); wrap.appendChild(g.d);
+
+  g = aGroup("B","Delivery effort model","weeks, factors, percentages");
+  grid=el("div","agrid");
+  grid.appendChild(aField("Pod hours per person-week","delivery.weekHours","hrs","1"));
+  grid.appendChild(aField("Design & discovery","delivery.designWeeks","weeks","0.5"));
+  grid.appendChild(aField("Weeks per SW integration","delivery.swWeeksPerIntegration","weeks","0.5"));
+  grid.appendChild(aField("Knowledge-graph build","delivery.kgWeeks","weeks","0.1"));
+  grid.appendChild(aField("Cache-memory build","delivery.cacheWeeks","weeks","0.5"));
+  grid.appendChild(aField("Weeks per workflow functionality","delivery.wfWeeksPerFunc","weeks","0.1"));
+  grid.appendChild(aField("Workflow-integration factor","delivery.integrationFactor","× component hrs","0.05"));
+  grid.appendChild(aField("Integration-testing factor","delivery.integTestFactor","× component hrs","0.05"));
+  grid.appendChild(aField("Deployment — Low","delivery.deployLowPct","% of core dev","1"));
+  grid.appendChild(aField("Deployment — High","delivery.deployHighPct","% of core dev","1"));
+  grid.appendChild(aField("Test & eval ≤ 2 arms","delivery.testPctSmall","%","1"));
+  grid.appendChild(aField("Test & eval 3–5 arms","delivery.testPctMid","%","1"));
+  grid.appendChild(aField("Test & eval > 5 arms","delivery.testPctLarge","%","1"));
+  grid.appendChild(aField("FE weeks per page","delivery.fePageWeeks","weeks","0.1"));
+  grid.appendChild(aField("FE features per page","delivery.feFeaturesPerPage","#","1"));
+  grid.appendChild(aField("FE weeks per feature","delivery.feFeatureWeeks","weeks","0.05"));
+  g.b.appendChild(grid); wrap.appendChild(g.d);
+
+  g = aGroup("C","Data & memory profile","tier sizes, modality effort, page profile");
+  for(const tier of Object.keys(A.data.tiers)){
+    g.b.appendChild(el("div",null,`<b style="font-size:11px">${tier} data tier</b>`));
+    grid=el("div","agrid");
+    grid.appendChild(aField("Database size",`data.tiers.${tier}.gb`,"GB","1"));
+    grid.appendChild(aField("Text share",`data.tiers.${tier}.text`,"%","5"));
+    grid.appendChild(aField("Tabular share",`data.tiers.${tier}.tabular`,"%","5"));
+    grid.appendChild(aField("Image share",`data.tiers.${tier}.image`,"%","5"));
+    grid.appendChild(aField("Audio share",`data.tiers.${tier}.audio`,"%","5"));
+    grid.style.marginBottom="12px";
+    g.b.appendChild(grid);
+  }
+  g.b.appendChild(el("div",null,`<b style="font-size:11px">Build effort per modality</b>`));
+  grid=el("div","agrid");
+  for(const k of Object.keys(A.data.build)){
+    grid.appendChild(aField(k+" — weeks per unit",`data.build.${k}.wk`,"weeks","0.1"));
+    grid.appendChild(aField(k+" — GB per unit divisor",`data.build.${k}.div`,"GB","5"));
+  }
+  g.b.appendChild(grid);
+  wrap.appendChild(g.d);
+
+  g = aGroup("D","Build-phase infrastructure","weekly cloud prices during the build");
+  const tbl=el("table","mini");
+  tbl.innerHTML=`<thead><tr><th>Service</th><th style="width:130px">Share of build weeks</th><th style="width:140px">Weekly price (₹)</th></tr></thead>`;
+  const tbody=el("tbody");
+  A.infra.items.forEach((it,i)=>{
+    const tr=el("tr");
+    tr.appendChild(el("td",null,it.name));
+    const t1=el("td","num"), i1=el("input"); i1.type="number"; i1.step="0.05"; i1.value=it.frac;
+    i1.onchange=()=>{ it.frac=num(i1.value); markDirty("infra."+i+".frac"); update(); }; t1.appendChild(i1); tr.appendChild(t1);
+    const t2=el("td","num"), i2=el("input"); i2.type="number"; i2.step="50"; i2.value=it.weekly;
+    i2.onchange=()=>{ it.weekly=num(i2.value); markDirty("infra."+i+".weekly"); update(); }; t2.appendChild(i2); tr.appendChild(t2);
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody); g.b.appendChild(tbl); wrap.appendChild(g.d);
+
+  g = aGroup("E","LLM price book","USD per 1M tokens · July 2026, sourced from provider pricing pages");
+  const mt=el("table","mini");
+  mt.innerHTML=`<thead><tr><th>Provider</th><th>Model</th><th style="width:110px">Input $/1M</th><th style="width:110px">Output $/1M</th><th>Note</th></tr></thead>`;
+  const mb=el("tbody");
+  A.models.forEach((md,i)=>{
+    const tr=el("tr");
+    tr.appendChild(el("td",null,md.p));
+    tr.appendChild(el("td",null,"<b>"+md.m+"</b>"));
+    const t1=el("td","num"), i1=el("input"); i1.type="number"; i1.step="0.01"; i1.value=md.i;
+    i1.onchange=()=>{ md.i=num(i1.value); markDirty("models."+i+".i"); syncHelps(); renderDetailTables(); update(); }; t1.appendChild(i1); tr.appendChild(t1);
+    const t2=el("td","num"), i2=el("input"); i2.type="number"; i2.step="0.01"; i2.value=md.o;
+    i2.onchange=()=>{ md.o=num(i2.value); markDirty("models."+i+".o"); syncHelps(); renderDetailTables(); update(); }; t2.appendChild(i2); tr.appendChild(t2);
+    tr.appendChild(el("td",null,`<span style="color:var(--d-gray);font-size:11px">${md.note||""}</span>`));
+    mb.appendChild(tr);
+  });
+  mt.appendChild(mb); g.b.appendChild(mt);
+  g.b.appendChild(el("div","help","Rates verified July 2026 against provider pricing pages (OpenAI, Anthropic, Google, DeepSeek, Mistral, xAI, Groq/Meta hosts, AWS Bedrock, Cohere). Reasoning models bill hidden thinking tokens as output — budget headroom. Sonnet 5 shows intro pricing to 31 Aug 2026."));
+  grid=el("div","agrid"); grid.style.marginTop="12px";
+  grid.appendChild(aField("Cached-input price","cacheReadPct","% of standard input","5"));
+  grid.appendChild(aField("Batch-endpoint discount","batchDiscPct","%","5"));
+  g.b.appendChild(grid);
+  wrap.appendChild(g.d);
+
+  g = aGroup("F","Tokens per call","by modality × usage level");
+  for(const mod of Object.keys(A.tokens)){
+    g.b.appendChild(el("div",null,`<b style="font-size:11px">${mod}</b>`));
+    grid=el("div","agrid"); grid.style.marginBottom="12px";
+    for(const lvl of ["Low","Medium","High"]){
+      grid.appendChild(aField(lvl+" — input",`tokens.${mod}.${lvl}.i`,"tokens","50"));
+      grid.appendChild(aField(lvl+" — output",`tokens.${mod}.${lvl}.o`,"tokens","50"));
+    }
+    g.b.appendChild(grid);
+  }
+  wrap.appendChild(g.d);
+
+  g = aGroup("G","Traffic profiles","requests & utilisation per project type");
+  for(const pk of Object.keys(A.projects)){
+    g.b.appendChild(el("div",null,`<b style="font-size:11px">${pk}</b>`));
+    grid=el("div","agrid"); grid.style.marginBottom="12px";
+    grid.appendChild(aField("Peak requests / sec",`projects.${pk}.rps`,"req/s","1"));
+    grid.appendChild(aField("Utilisation",`projects.${pk}.util`,"%","5"));
+    g.b.appendChild(grid);
+  }
+  wrap.appendChild(g.d);
+
+  g = aGroup("H","GPU & serving","hardware rates, flat serving");
+  const gt=el("table","mini");
+  gt.innerHTML=`<thead><tr><th>GPU</th><th style="width:110px">Tokens / sec</th><th style="width:110px">$ / hr</th><th style="width:120px">$ / sec (serverless)</th></tr></thead>`;
+  const gb2=el("tbody");
+  A.gpu.list.forEach((gp,i)=>{
+    const tr=el("tr");
+    tr.appendChild(el("td",null,gp.name));
+    for(const [k,step] of [["tps","50"],["hr","0.1"],["sec","0.00001"]]){
+      const td=el("td","num"), inp=el("input"); inp.type="number"; inp.step=step; inp.value=gp[k];
+      inp.onchange=()=>{ gp[k]=num(inp.value); markDirty("gpu."+i+"."+k); update(); }; td.appendChild(inp); tr.appendChild(td);
+    }
+    gb2.appendChild(tr);
+  });
+  gt.appendChild(gb2); g.b.appendChild(gt);
+  grid=el("div","agrid"); grid.style.marginTop="12px";
+  grid.appendChild(aField("Cluster config, monthly","gpu.configMonthly","$ / mo","1"));
+  grid.appendChild(aField("Avg inference time (serverless)","gpu.avgInferenceSec","sec","1"));
+  grid.appendChild(aField("Serverless storage","gpu.serverlessStorage","$ / mo","1"));
+  grid.appendChild(aField("Flat serving — GCP","gpu.flat.GCP","$ / mo","1"));
+  grid.appendChild(aField("Flat serving — AWS","gpu.flat.AWS","$ / mo","1"));
+  grid.appendChild(aField("Flat serving — Azure","gpu.flat.Azure","$ / mo","1"));
+  g.b.appendChild(grid); wrap.appendChild(g.d);
+
+  g = aGroup("I","Pipeline, storage & observability","parsing, embeddings, vector / graph stores, evals");
+  grid=el("div","agrid");
+  A.pipeline.parsers.forEach((p,i)=>grid.appendChild(aField(p.name,`pipeline.parsers.${i}.perPage`,"$ / page","0.001")));
+  A.pipeline.embeds.forEach((p,i)=>grid.appendChild(aField(p.name,`pipeline.embeds.${i}.per1k`,"$ / 1k tokens","0.00001")));
+  A.pipeline.vectors.forEach((p,i)=>grid.appendChild(aField(p.name,`pipeline.vectors.${i}.perGB`,"$ / GB / mo","0.01")));
+  grid.appendChild(aField("Knowledge graph (Neo4j-class)","storage.kgPerGB","$ / GB-RAM / mo","1"));
+  grid.appendChild(aField("Search index pod","storage.searchPodHr","$ / pod-hr","0.01"));
+  grid.appendChild(aField("Log volume","obs.loggingGB","GB / mo","1"));
+  grid.appendChild(aField("Log storage rate","obs.loggingRate","$ / GB","0.01"));
+  grid.appendChild(aField("Trace rate","obs.traceRate","$ / trace","0.0005"));
+  grid.appendChild(aField("Eval sample share","obs.evalSample","of output tokens","0.00005"));
+  grid.appendChild(aField("LLM-judge rate","obs.judgeRate","$ / judged token","0.001"));
+  grid.appendChild(aField("Human eval rate","obs.humanRate","$ / 1k tokens","0.05"));
+  g.b.appendChild(grid); wrap.appendChild(g.d);
+}
+
+/* ---------- results ---------- */
+const FIXED_PALETTE = ["#0B3D2E","#046A38","#2C8A4B","#569D41","#86BC25","#A9CE58","#43695B","#53565A","#75787B","#9EA1A2","#0097A9","#005587","#C4D600","#BBBCBC"];
+const VAR_PALETTE   = ["#005587","#046A38","#86BC25","#0097A9","#53565A","#9EA1A2"];
+
+function bRow(name, sub, hrs, inr, maxAbs, color, neg){
+  const row=el("div","brow"+(neg?" neg":""));
+  row.appendChild(el("div","nm",name+`<small>${sub}</small>`));
+  const bar=el("div","bar"); const i=el("i");
+  i.style.width=(maxAbs>0?Math.abs(inr)/maxAbs*100:0)+"%";
+  if(color) i.style.background=color;
+  bar.appendChild(i); row.appendChild(bar);
+  row.appendChild(el("div","hrs",hrs));
+  row.appendChild(el("div","amt",(neg?"−":"")+fmtFull(Math.abs(inr))));
+  return row;
+}
+
+function fixedRowsFrom(r){
+  return [
+    { n:"Design & discovery", s:"architecture + tool identification", h:r.designHours, v:r.H(r.designHours) },
+    { n:"Memory database build", s:"vector DB"+(r.memT.kg?" + knowledge graph":"")+(r.memT.cache?" + cache":""), h:r.memoryHours, v:r.H(r.memoryHours) },
+    { n:"Software integrations", s:`${r.swN} enterprise integration${r.swN>1?"s":""} × ${A.delivery.swWeeksPerIntegration} wks`, h:r.swHours, v:r.H(r.swHours) },
+    { n:"Tool integrations", s:`${r.toolCount} tool${r.toolCount!==1?"s":""} wired to the agents`, h:r.toolHours, v:r.H(r.toolHours) },
+    { n:"Orchestration & reasoning", s:`${r.orchT.loops} loop${r.orchT.loops>1?"s":""} · ${S.orchComplexity.toLowerCase()} architecture`, h:r.orchHours, v:r.H(r.orchHours) },
+    { n:"Non-LLM workflow arms", s:`${r.wfActive.length} deterministic workflow${r.wfActive.length!==1?"s":""}`, h:r.nonLLMHours, v:r.H(r.nonLLMHours) },
+    { n:"Workflow integration", s:"stitching individually built arms", h:r.integrationHours, v:r.H(r.integrationHours) },
+    { n:"Integration testing", s:"troubleshooting the assembled flow", h:r.integTestHours, v:r.H(r.integTestHours) },
+    { n:"DevOps & deployment", s:`${Math.round(r.deployPct*100)}% of core dev hours`, h:r.deployHours, v:r.H(r.deployHours) },
+    { n:"Front-end development", s:`${r.fePages} pages + back-end wiring`, h:r.feHours, v:r.H(r.feHours) },
+    { n:"Testing & evaluation", s:`${r.tp}% of core dev hours`, h:r.testEvalHours, v:r.H(r.testEvalHours) },
+    { n:"Reusability savings", s:`${S.reusable} arm${S.reusable!==1?"s":""} from library @ ${Math.round(S.reuseFactor*100)}%`, h:-r.reuseSavedHours, v:-r.H(r.reuseSavedHours), neg:true },
+    { n:"Build-phase infrastructure", s:`${r.totalWeeks.toFixed(1)} build weeks of cloud services`, h:null, v:r.buildInfraINR },
+    { n:"Embedding & parsing (one-time)", s:`${fmtNum(r.pages)} pages parsed · ${(r.embedTokens/1e6).toFixed(1)}M tokens embedded`, h:null, v:r.pipelineINR }
+  ];
+}
+function varRowsFrom(r){
+  return [
+    { n:"LLM inferencing", s:`${r.engineDetail.length} engine${r.engineDetail.length!==1?"s":""} × ${fmtNum(r.callsPerMonth)} calls`+(S.cachePct>0?` · ${S.cachePct}% cache`:"")+(S.batchPct>0?` · ${S.batchPct}% batch`:""), v:r.llmMonthlyUSD },
+    { n:"Compute & serving", s:r.computeSub, v:r.computeUSD },
+    { n:"Vector index storage", s:`${r.vstoreName} · ${r.gb} GB`, v:r.vdbUSD },
+    { n:"Knowledge-graph database", s:r.memT.kg?`Neo4j-class · ${r.gb} GB RAM`:"not required at this memory tier", v:r.kgUSD },
+    { n:"Search index operations", s:`${S.searchPods} pod${S.searchPods!==1?"s":""} × ${S.hoursDay}h × ${S.daysMonth}d`, v:r.searchUSD },
+    { n:"Observability & evaluation", s:`${fmtNum(r.callsPerMonth)} traces · ${S.evalType.toLowerCase()} evals`, v:r.obsUSD }
+  ];
+}
+
+function renderResults(){
+  const r = computeCore();
+  const fx = A.commercial.fx;
+  const band = confidence();
+
+  /* strip + rail */
+  $("stripBuild").innerHTML = "<b>"+fmtMoney(r.fixedTotalINR)+"</b>";
+  $("stripRun").textContent = fmtMoney(r.varMonthlyINR);
+  $("stripCall").innerHTML = fmtSmallUSD(r.perCallUSD)+"<small>USD</small>";
+  $("stripBand").textContent = "±"+band+"% · "+(S.mode==="detailed"?"architect inputs":"quick inputs");
+  $("railBuild").textContent = fmtMoney(r.fixedTotalINR);
+  $("railRun").textContent = fmtMoney(r.varMonthlyINR)+" / mo";
+  $("confFill").style.width = (100-band*1.8)+"%";
+  $("confLbl").textContent = (S.mode==="detailed"?"Architect inputs":"Quick inputs")+" · ±"+band+"% band";
+
+  /* hero */
+  $("kBuild").textContent = fmtMoney(r.fixedTotalINR);
+  $("kBuildSub").textContent = "development + build infra + embeddings";
+  $("kRun").textContent = fmtMoney(r.varMonthlyINR);
+  $("kRunSub").textContent = fmtNum(r.callsPerMonth)+" agent calls / month at "+r.proj.util+"% utilisation";
+  $("kCall").innerHTML = fmtSmallUSD(r.perCallUSD)+" <small>USD</small>";
+  $("kCallSub").textContent = r.engineDetail.length+" inference engines · "+r.loops+" reasoning loops";
+  $("kHours").innerHTML = fmtNum(r.netHours)+" <small>hrs</small>";
+  $("kHoursSub").textContent = "≈ "+Math.round(r.netHours/r.weekHours)+" pod-weeks · "+fmtNum(r.reuseSavedHours)+" hrs saved via reuse";
+
+  const lo=r.fixedTotalINR*(1-band/100), hi=r.fixedTotalINR*(1+band/100);
+  $("rangeTxt").textContent = fmtMoney(lo)+" — "+fmtMoney(hi)+" build · run "+fmtMoney(r.varMonthlyINR*(1-band/100))+" — "+fmtMoney(r.varMonthlyINR*(1+band/100))+" / mo";
+  $("rangeFill").style.left=(50-band*.9)+"%"; $("rangeFill").style.width=(band*1.8)+"%";
+  $("rangeMark").style.left="calc(50% - 1px)";
+
+  /* fixed card */
+  const fr = fixedRowsFrom(r);
+  $("fixedTot").textContent = fmtFull(r.fixedTotalINR);
+  $("fixedTot2").textContent = fmtFull(r.fixedTotalINR);
+  $("fixedSub").textContent = `Labour ${fmtMoney(r.laborINR)} at ₹${fmtNum(A.commercial.rate)}/hr · build infra ${fmtMoney(r.buildInfraINR)} · data pipeline ${fmtMoney(r.pipelineINR)}`;
+  const posSum = fr.filter(x=>x.v>0).reduce((a,x)=>a+x.v,0);
+  const comp=$("fixedComp"); comp.innerHTML=""; const leg=$("fixedLegend"); leg.innerHTML="";
+  fr.forEach((x,i)=>{ if(x.v<=0) return;
+    const seg=el("i"); seg.style.width=(x.v/posSum*100)+"%"; seg.style.background=FIXED_PALETTE[i%FIXED_PALETTE.length]; seg.title=x.n; comp.appendChild(seg);
+    if(x.v/posSum>0.03) leg.appendChild(el("span",null,`<span class="sw" style="background:${FIXED_PALETTE[i%FIXED_PALETTE.length]}"></span>${x.n}`));
+  });
+  const rows=$("fixedRows"); rows.innerHTML="";
+  const maxAbs=Math.max(...fr.map(x=>Math.abs(x.v)));
+  fr.forEach((x,i)=>rows.appendChild(bRow(x.n,x.s, x.h==null?"–":fmtNum(Math.abs(x.h))+" h", x.v, maxAbs, x.neg?null:FIXED_PALETTE[i%FIXED_PALETTE.length], x.neg)));
+
+  /* variable card */
+  const vr = varRowsFrom(r);
+  $("varTot").textContent = fmtFull(r.varMonthlyINR)+" / mo";
+  $("varTot2").innerHTML = fmtFull(r.varMonthlyINR)+`&nbsp;<span style="font-weight:400;color:var(--d-gray);font-size:12px">(${fmtSmallUSD(r.varMonthlyUSD)})</span>`;
+  $("varSub").textContent = `${S.hoursDay} hrs/day × ${S.daysMonth} days · ${S.projectType} · peak ${r.proj.rps} req/s`;
+  const vSum = vr.reduce((a,x)=>a+x.v,0);
+  const vComp=$("varComp"); vComp.innerHTML=""; const vLeg=$("varLegend"); vLeg.innerHTML="";
+  vr.forEach((x,i)=>{ if(x.v<=0) return;
+    const seg=el("i"); seg.style.width=(x.v/vSum*100)+"%"; seg.style.background=VAR_PALETTE[i%VAR_PALETTE.length]; seg.title=x.n; vComp.appendChild(seg);
+    if(x.v/vSum>0.02) vLeg.appendChild(el("span",null,`<span class="sw" style="background:${VAR_PALETTE[i%VAR_PALETTE.length]}"></span>${x.n}`));
+  });
+  const vRows=$("varRows"); vRows.innerHTML="";
+  const vMax=Math.max(...vr.map(x=>x.v));
+  vr.forEach((x,i)=>vRows.appendChild(bRow(x.n,x.s, vSum>0?Math.round(x.v/vSum*100)+"%":"–", x.v*fx, vMax*fx, VAR_PALETTE[i%VAR_PALETTE.length], false)));
+
+  /* scenarios */
+  const sw=$("scenWrap"); sw.innerHTML="";
+  for(const pk of Object.keys(A.projects)){
+    const rr = computeCore(pk);
+    const d=el("div","sc"+(pk===S.projectType?" on":""));
+    d.appendChild(el("div","t",pk.split(" [")[0]));
+    d.appendChild(el("div","m",fmtMoney(rr.varMonthlyINR)+" / mo"));
+    d.appendChild(el("div","d",fmtNum(rr.callsPerMonth)+" calls · "+fmtSmallUSD(rr.varMonthlyUSD)+" · "+A.projects[pk].rps+" req/s @ "+A.projects[pk].util+"%"));
+    sw.appendChild(d);
+  }
+
+  /* TCO */
+  const t = computeTCO(r);
+  $("tcoTot").textContent = fmtMoney(t.total);
+  const tw=$("tcoWrap"); tw.innerHTML="";
+  const tItem=(k,v,d)=>{ const c=el("div","tc"); c.appendChild(el("div","k",k)); c.appendChild(el("div","v",fmtMoney(v))); c.appendChild(el("div","d",d)); tw.appendChild(c); };
+  tItem("Build",r.fixedTotalINR,"one-time delivery");
+  tItem("Contingency",t.contingency,A.commercial.contingencyPct+"% risk buffer");
+  tItem("12 months of running",t.run12,A.commercial.growthPct>0?A.commercial.growthPct+"%/mo growth applied":"flat usage");
+  tItem("Support & maintenance",t.amc,A.commercial.amcPct+"% of build labour / yr");
+
+  /* warnings & insights */
+  const w=$("warnings"); w.innerHTML="";
+  const add=(cls,txt)=>w.appendChild(el("div",cls,txt));
+  if(r.kgUSD>0 && r.kgUSD/r.varMonthlyUSD>0.25) add("warn",`Knowledge-graph memory is ${Math.round(r.kgUSD/r.varMonthlyUSD*100)}% of the monthly run cost (${fmtMoney(r.kgUSD*fx)}). Confirm the use case genuinely needs graph memory before committing to the Complex memory tier.`);
+  if(r.loops>=4) add("warn","4 reasoning loops multiply output-token spend 4× on every call. Planning-and-reflection architectures should justify this against a 2-loop ReACT baseline.");
+  if(S.gpuNeeded && S.deployStyle==="Kubernetes" && r.proj.util<40) add("warn",`Dedicated GPUs at ${r.proj.util}% utilisation means paying for idle capacity most of the day — compare the serverless path.`);
+  if(S.reusable>0) add("insight",`Reuse of ${S.reusable} arm${S.reusable!==1?"s":""} saves ${fmtNum(r.reuseSavedHours)} hours ≈ ${fmtMoney(r.reuseSavedHours*A.commercial.rate)} — worth protecting in the delivery plan.`);
+  if(S.cachePct===0) add("insight","Prompt caching is off. Agents resend system prompts and tool schemas on every call — wiring caching at a 60% hit rate would cut the input-token bill by ~54% (set it in step 3).");
+  const md0 = findModel(S.provider,S.model);
+  if(md0.o>=25) add("insight",`${md0.m} bills $${md0.o}/1M output tokens. Route routine arm traffic to a value tier (Haiku 4.5, Gemini 3 Flash, DeepSeek V4 Flash) and reserve the flagship for the orchestrator.`);
+  if(r.integrationHours/r.grossHours>0.28) add("insight",`Workflow integration is ${Math.round(r.integrationHours/r.grossHours*100)}% of gross effort — the 1.0× stitching factor from the source workbook is the model's biggest sensitivity. Pressure-test it in Assumptions → B.`);
+
+  /* dynamic title */
+  $("estTitle").textContent = S.desc ? "The estimate — "+S.desc.slice(0,60)+(S.desc.length>60?"…":"") : "The estimate";
+
+  renderNudges();
+}
+
+/* =====================================================================
+   EXPORTS
+===================================================================== */
+function summaryText(){
+  const r=computeCore(); const t=computeTCO(r); const band=confidence();
+  const fr=fixedRowsFrom(r), vr=varRowsFrom(r);
+  const L=[];
+  L.push("AI AGENT COST ESTIMATE · Deloitte AI & Data");
+  L.push("Generated "+new Date().toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}));
+  if(S.desc) L.push("Agent: "+S.desc);
+  L.push("");
+  L.push("HEADLINES ("+(S.mode==="detailed"?"architect":"quick")+" inputs, ±"+band+"% band)");
+  L.push("  Total build cost (one-time): "+fmtMoney(r.fixedTotalINR)+"  ["+fmtMoney(r.fixedTotalINR*(1-band/100))+" – "+fmtMoney(r.fixedTotalINR*(1+band/100))+"]");
+  L.push("  Run cost per month:          "+fmtMoney(r.varMonthlyINR)+"  ("+fmtSmallUSD(r.varMonthlyUSD)+")");
+  L.push("  Cost per agent call:         "+fmtSmallUSD(r.perCallUSD));
+  L.push("  Effort:                      "+fmtNum(r.netHours)+" pod-hours ("+fmtNum(r.reuseSavedHours)+" saved via reuse)");
+  L.push("  Year-1 TCO:                  "+fmtMoney(t.total)+" (build + "+A.commercial.contingencyPct+"% contingency + 12 mo run + "+A.commercial.amcPct+"% AMC)");
+  L.push("");
+  L.push("FIXED COST OF BUILDING — "+fmtMoney(r.fixedTotalINR));
+  fr.forEach(x=>L.push("  "+(x.neg?"−":" ")+x.n.padEnd(30)+(x.h==null?"      ":String(Math.round(Math.abs(x.h))).padStart(5)+"h ")+"  "+fmtMoney(Math.abs(x.v))));
+  L.push("");
+  L.push("VARIABLE COST PER MONTH — "+fmtMoney(r.varMonthlyINR));
+  vr.forEach(x=>L.push("   "+x.n.padEnd(30)+fmtMoney(x.v*A.commercial.fx)));
+  L.push("");
+  L.push("SETUP: "+r.arms+" arms · "+S.dataComplexity+" data · "+S.memComplexity+" memory · "+S.orchComplexity+" orchestration ("+r.loops+" loops) · "+S.provider+" "+S.model+" · "+S.projectType+" · "+S.hoursDay+"h×"+S.daysMonth+"d"+(S.cachePct>0?" · "+S.cachePct+"% cache":"")+(S.batchPct>0?" · "+S.batchPct+"% batch":""));
+  L.push("Rate ₹"+fmtNum(A.commercial.rate)+"/hr · FX ₹"+A.commercial.fx+"/$ · "+dirtyPaths.size+" assumption(s) overridden");
+  L.push("");
+  L.push("Directional estimate for scoping — validate with delivery leads before contracting.");
+  return L.join("\n");
+}
+function toast(msg){ const t=$("toast"); t.innerHTML=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2400); }
+
+function download(name, mime, content){
+  const blob=new Blob([content],{type:mime});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},400);
+}
+function exportCsv(){
+  const r=computeCore(); const t=computeTCO(r);
+  const rows=[["Section","Line item","Detail","Hours","INR","USD"]];
+  fixedRowsFrom(r).forEach(x=>rows.push(["Fixed (build)",x.n,x.s,x.h==null?"":Math.round(x.h),Math.round(x.v),(x.v/A.commercial.fx).toFixed(2)]));
+  rows.push(["Fixed (build)","TOTAL BUILD","","",Math.round(r.fixedTotalINR),(r.fixedTotalINR/A.commercial.fx).toFixed(2)]);
+  varRowsFrom(r).forEach(x=>rows.push(["Variable (monthly)",x.n,x.s,"",Math.round(x.v*A.commercial.fx),x.v.toFixed(2)]));
+  rows.push(["Variable (monthly)","TOTAL PER MONTH","","",Math.round(r.varMonthlyINR),r.varMonthlyUSD.toFixed(2)]);
+  rows.push(["TCO","Contingency",A.commercial.contingencyPct+"%","",Math.round(t.contingency),""]);
+  rows.push(["TCO","12 months of running","","",Math.round(t.run12),""]);
+  rows.push(["TCO","Support & maintenance",A.commercial.amcPct+"% of build labour","",Math.round(t.amc),""]);
+  rows.push(["TCO","YEAR-1 TOTAL","","",Math.round(t.total),""]);
+  const csv=rows.map(rw=>rw.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  download("agent-cost-estimate.csv","text/csv;charset=utf-8",csv);
+  toast("<b>CSV</b> downloaded");
+}
+function exportReport(){
+  const r=computeCore(); const t=computeTCO(r); const band=confidence();
+  const fr=fixedRowsFrom(r), vr=varRowsFrom(r);
+  const row=(n,s,h,v,neg)=>`<tr${neg?' class="neg"':''}><td><b>${n}</b><br><span class="s">${s}</span></td><td class="r">${h==null?"–":Math.round(Math.abs(h)).toLocaleString("en-IN")+" h"}</td><td class="r">${(neg?"−":"")+fmtFull(Math.abs(v))}</td></tr>`;
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>AI Agent Cost Estimate — Deloitte</title><style>
+body{font:13px/1.55 'Segoe UI',system-ui,sans-serif;color:#1a1a1a;max-width:860px;margin:36px auto;padding:0 24px}
+.mast{border-bottom:4px solid #000;padding-bottom:12px;display:flex;justify-content:space-between;align-items:baseline}
+.wm{font-weight:800;font-size:22px}.wm span{color:#86BC25}
+h1{font-size:17px;margin:18px 0 2px}h2{font-size:14px;margin:26px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px}
+.meta{color:#53565A;font-size:11.5px}
+.kpis{display:flex;gap:26px;background:#000;color:#fff;border-radius:8px;padding:16px 20px;margin:16px 0}
+.kpi b{display:block;font-size:9px;letter-spacing:.12em;color:#9d9d9a;text-transform:uppercase;font-weight:600}
+.kpi span{font-size:21px;font-weight:300;font-family:Consolas,monospace}.kpi:first-child span{color:#86BC25}
+table{width:100%;border-collapse:collapse;margin:6px 0}
+td,th{padding:6px 8px;border-bottom:1px solid #eee;vertical-align:top;text-align:left}
+td.r,th.r{text-align:right;font-family:Consolas,monospace;white-space:nowrap}
+.s{color:#53565A;font-size:11px}.neg td{color:#046A38}
+tfoot td{border-top:2px solid #000;font-weight:700}
+.note{background:#F4F8EA;border-left:3px solid #86BC25;padding:9px 12px;font-size:11.5px;margin:12px 0}
+footer{margin-top:30px;color:#53565A;font-size:10.5px;border-top:1px solid #ddd;padding-top:10px}
+</style></head><body>
+<div class="mast"><div class="wm">Deloitte<span>.</span></div><div class="meta">AI &amp; Data · Agent build &amp; run economics</div></div>
+<h1>AI Agent Cost Estimate${S.desc?" — "+S.desc:""}</h1>
+<div class="meta">Generated ${new Date().toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})} · ${S.mode==="detailed"?"Architect (detailed)":"Partner (quick)"} inputs · ±${band}% confidence band · ${dirtyPaths.size} assumption(s) overridden</div>
+<div class="kpis">
+<div class="kpi"><b>Total build · one-time</b><span>${fmtMoney(r.fixedTotalINR)}</span></div>
+<div class="kpi"><b>Run · per month</b><span>${fmtMoney(r.varMonthlyINR)}</span></div>
+<div class="kpi"><b>Per agent call</b><span>${fmtSmallUSD(r.perCallUSD)}</span></div>
+<div class="kpi"><b>Year-1 TCO</b><span>${fmtMoney(t.total)}</span></div>
+</div>
+<div class="note">Range at ±${band}%: build ${fmtMoney(r.fixedTotalINR*(1-band/100))} – ${fmtMoney(r.fixedTotalINR*(1+band/100))}; run ${fmtMoney(r.varMonthlyINR*(1-band/100))} – ${fmtMoney(r.varMonthlyINR*(1+band/100))} / month.</div>
+<h2>Fixed cost of building — ${fmtFull(r.fixedTotalINR)}</h2>
+<table><thead><tr><th>Line item</th><th class="r">Hours</th><th class="r">Cost</th></tr></thead>
+<tbody>${fr.map(x=>row(x.n,x.s,x.h,x.v,x.neg)).join("")}</tbody>
+<tfoot><tr><td>Total build cost</td><td></td><td class="r">${fmtFull(r.fixedTotalINR)}</td></tr></tfoot></table>
+<h2>Variable cost of running — ${fmtFull(r.varMonthlyINR)} / month</h2>
+<table><thead><tr><th>Line item</th><th class="r">Share</th><th class="r">Cost / mo</th></tr></thead>
+<tbody>${vr.map(x=>`<tr><td><b>${x.n}</b><br><span class="s">${x.s}</span></td><td class="r">${r.varMonthlyUSD>0?Math.round(x.v/r.varMonthlyUSD*100)+"%":"–"}</td><td class="r">${fmtFull(x.v*A.commercial.fx)}</td></tr>`).join("")}</tbody>
+<tfoot><tr><td>Total per month</td><td></td><td class="r">${fmtFull(r.varMonthlyINR)} (${fmtSmallUSD(r.varMonthlyUSD)})</td></tr></tfoot></table>
+<h2>Year-1 total cost of ownership — ${fmtMoney(t.total)}</h2>
+<table><tbody>
+<tr><td>Build (one-time)</td><td class="r">${fmtFull(r.fixedTotalINR)}</td></tr>
+<tr><td>Contingency (${A.commercial.contingencyPct}%)</td><td class="r">${fmtFull(t.contingency)}</td></tr>
+<tr><td>12 months of running${A.commercial.growthPct>0?" ("+A.commercial.growthPct+"%/mo growth)":""}</td><td class="r">${fmtFull(t.run12)}</td></tr>
+<tr><td>Support &amp; maintenance (${A.commercial.amcPct}% of build labour)</td><td class="r">${fmtFull(t.amc)}</td></tr>
+</tbody><tfoot><tr><td>Year-1 total</td><td class="r">${fmtMoney(t.total)}</td></tr></tfoot></table>
+<h2>Configuration</h2>
+<table><tbody>
+<tr><td>Architecture</td><td>${r.arms} agent arm(s) · ${S.reusable} reused @ ${Math.round(S.reuseFactor*100)}% · ${r.loops} reasoning loop(s)</td></tr>
+<tr><td>Build levers</td><td>${S.dataComplexity} data · ${S.memComplexity} memory · ${S.orchComplexity} orchestration · ${S.swComplexity} integrations · ${S.toolComplexity} tools · ${S.feComplexity} front end · ${S.deployComplexity} deployment on ${S.hyperscaler}</td></tr>
+<tr><td>Runtime</td><td>${S.provider} ${S.model} · ${S.modality} @ ${S.tokenLevel} tokens · ${S.projectType} · ${S.hoursDay} h/day × ${S.daysMonth} d/mo${S.cachePct>0?" · "+S.cachePct+"% prompt-cache hits":""}${S.batchPct>0?" · "+S.batchPct+"% batch":""}${S.gpuNeeded?" · GPU: "+S.gpuHw+" ("+S.deployStyle+")":""}</td></tr>
+<tr><td>Commercials</td><td>₹${A.commercial.rate.toLocaleString("en-IN")}/hr blended · FX ₹${A.commercial.fx}/$ · contingency ${A.commercial.contingencyPct}% · AMC ${A.commercial.amcPct}%</td></tr>
+</tbody></table>
+<footer>Directional estimate produced by the Deloitte AI &amp; Data agent cost model (effort model from the practice costing workbook; LLM rates from a July-2026 provider price book). Validate with delivery leads before contracting. Not a quotation.</footer>
+</body></html>`;
+  download("agent-cost-estimate.html","text/html;charset=utf-8",html);
+  toast("<b>Report</b> downloaded — open it or attach to mail");
+}
+
+/* =====================================================================
+   NAVIGATION + WIRING
+===================================================================== */
+function gotoStep(n){
+  S.stepNo=n;
+  document.querySelectorAll(".step").forEach(s=>s.classList.remove("on"));
+  $("step"+n).classList.add("on");
+  document.querySelectorAll(".railstep").forEach(b=>{
+    const bn=+b.dataset.step;
+    b.classList.toggle("on",bn===n);
+    b.classList.toggle("done",bn<n);
+  });
+  window.scrollTo({top:0,behavior:"smooth"});
+  if(n===5) renderResults();
+}
+function setMode(m){
+  S.mode=m;
+  document.body.classList.toggle("detailed",m==="detailed");
+  $("modeQuick").classList.toggle("on",m==="quick");
+  $("modeDetailed").classList.toggle("on",m==="detailed");
+  renderDetailTables(); update();
+  toast(m==="detailed"?"<b>Architect mode</b> — detailed levers unlocked, band tightens to ±15%":"<b>Partner mode</b> — presets drive the detail");
+}
+function setCur(c){
+  S.currency=c;
+  $("curINR").classList.toggle("on",c==="INR");
+  $("curUSD").classList.toggle("on",c==="USD");
+  update();
+}
+function update(){ renderResults(); }
+
+function bindState(id, key, kind){
+  const e=$(id);
+  const h=()=>{ 
+    if(kind==="num") S[key]=num(e.value);
+    else if(kind==="bool") S[key]=e.checked;
+    else S[key]=e.value;
+    if(["provider"].includes(key)){ const ms=modelsFor(S.provider).map(x=>x.m); if(!ms.includes(S.model)) S.model=ms[0]; renderModelSelectors(); }
+    if(["provider","model","modality","tokenLevel"].includes(key)) S.engines=null;
+    if(key==="arms"||key==="multiAgent"||key==="reusable"){ S.engines=null; S.workflows=null; }
+    if(key==="gpuNeeded") $("gpuBlock").hidden=!S.gpuNeeded;
+    syncHelps(); renderDetailTables(); update();
+  };
+  e.addEventListener(kind==="bool"?"change":"input",h);
+  e.addEventListener("change",h);
+}
+
+function init(){
+  renderPills();
+  renderModelSelectors();
+  buildAssumptions();
+  renderDetailTables();
+
+  bindState("desc","desc");
+  bindState("multiAgent","multiAgent","bool");
+  bindState("arms","arms","num");
+  bindState("reusable","reusable","num");
+  bindState("hyperscaler","hyperscaler");
+  bindState("provider","provider");
+  bindState("model","model");
+  bindState("modality","modality");
+  bindState("tokenLevel","tokenLevel");
+  bindState("projectType","projectType");
+  bindState("evalType","evalType");
+  bindState("hoursDay","hoursDay","num");
+  bindState("daysMonth","daysMonth","num");
+  bindState("gpuNeeded","gpuNeeded","bool");
+  bindState("gpuHw","gpuHw");
+  bindState("deployStyle","deployStyle");
+  bindState("concurrency","concurrency","num");
+  bindState("tpsLevel","tpsLevel");
+  bindState("podMgr","podMgr","num");
+  bindState("podSr","podSr","num");
+  bindState("podCon","podCon","num");
+  bindState("parser","parser");
+  bindState("embedModel","embedModel");
+  bindState("vectorStore","vectorStore");
+  bindState("searchPods","searchPods","num");
+
+  $("reuseFactor").addEventListener("input",e=>{ S.reuseFactor=num(e.target.value)/100; $("reuseFactorVal").textContent=e.target.value+"%"; S.workflows=null; syncHelps(); renderDetailTables(); update(); });
+  $("cachePct").addEventListener("input",e=>{ S.cachePct=num(e.target.value); $("cachePctVal").textContent=e.target.value+"%"; update(); });
+  $("batchPct").addEventListener("input",e=>{ S.batchPct=num(e.target.value); $("batchPctVal").textContent=e.target.value+"%"; update(); });
+
+  document.querySelectorAll(".railstep").forEach(b=>b.addEventListener("click",()=>gotoStep(+b.dataset.step)));
+  document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click",()=>gotoStep(+b.dataset.goto)));
+  $("stripGo").addEventListener("click",()=>gotoStep(5));
+  $("modeQuick").addEventListener("click",()=>setMode("quick"));
+  $("modeDetailed").addEventListener("click",()=>setMode("detailed"));
+  $("curINR").addEventListener("click",()=>setCur("INR"));
+  $("curUSD").addEventListener("click",()=>setCur("USD"));
+
+  $("copyBtn").addEventListener("click",async()=>{
+    try{ await navigator.clipboard.writeText(summaryText()); toast("<b>Summary</b> copied to clipboard"); }
+    catch(_){ const ta=document.createElement("textarea"); ta.value=summaryText(); document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); toast("<b>Summary</b> copied"); }
+  });
+  $("dlCsv").addEventListener("click",exportCsv);
+  $("dlReport").addEventListener("click",exportReport);
+  $("printBtn").addEventListener("click",()=>{ gotoStep(5); setTimeout(()=>window.print(),200); });
+  $("resetAssump").addEventListener("click",()=>{
+    A=DEFAULT_A(); dirtyPaths.clear();
+    $("dirtyCount").textContent="All values at defaults";
+    buildAssumptions(); renderModelSelectors(); renderDetailTables(); syncHelps(); update();
+    toast("Assumptions reset to defaults");
+  });
+  $("resetAll").addEventListener("click",()=>{
+    if(!confirm("Reset all inputs and assumptions?")) return;
+    S=defaultState(); A=DEFAULT_A(); dirtyPaths.clear();
+    document.body.classList.remove("detailed");
+    $("modeQuick").classList.add("on"); $("modeDetailed").classList.remove("on");
+    $("curINR").classList.add("on"); $("curUSD").classList.remove("on");
+    $("desc").value=""; $("multiAgent").checked=true; $("arms").value=4; $("reusable").value=2;
+    $("reuseFactor").value=40; $("reuseFactorVal").textContent="40%";
+    $("cachePct").value=0; $("cachePctVal").textContent="0%";
+    $("batchPct").value=0; $("batchPctVal").textContent="0%";
+    $("gpuNeeded").checked=false; $("gpuBlock").hidden=true;
+    $("hoursDay").value=14; $("daysMonth").value=25;
+    $("podMgr").value=0; $("podSr").value=1; $("podCon").value=0;
+    $("concurrency").value=2; $("searchPods").value=1;
+    $("dirtyCount").textContent="All values at defaults";
+    renderPills(); renderModelSelectors(); buildAssumptions(); renderDetailTables(); syncHelps(); update(); gotoStep(1);
+  });
+
+  syncHelps();
+  update();
+}
+document.addEventListener("DOMContentLoaded",init);
+
+</script>
+</body>
+</html>
