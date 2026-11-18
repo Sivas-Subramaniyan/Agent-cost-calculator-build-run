@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI agent cost calculator · unus</title>
+<meta name="description" content="What would an AI agent cost you, and what would it give back? Build cost, monthly running cost and payback in a few plain questions.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+<style>
+/* unus palette, taken from unusai.works (Nov 2026) */
+:root{
+  --bg:#0B0B0C;--fg:#FFFFFF;--fg2:#C9C9CE;--fg3:#8A8B93;
+  --line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.22);
+  --panel:#131316;--panel2:#19191D;
+  --blue:#2B4BFF;--blue-hover:#1E3BEF;--blue-ink:#8EA0FF;--blue-wash:rgba(43,75,255,.12);
+  --sans:'Inter Tight',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --serif:'Instrument Serif',Georgia,serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+:root[data-theme="light"]{
+  --bg:#FFFFFF;--fg:#0B0B0C;--fg2:#33343A;--fg3:#5E5F67;
+  --line:rgba(11,11,12,.12);--line2:rgba(11,11,12,.24);
+  --panel:#F4F4F6;--panel2:#E6E6EA;
+  --blue-ink:#2B4BFF;--blue-wash:rgba(43,75,255,.08);
+}
+*{box-sizing:border-box;margin:0}
+html{background:var(--bg);color:var(--fg);font-family:var(--sans);-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{background:var(--bg);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--blue-ink);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:1280px;margin:0 auto;padding:0 clamp(16px,4vw,56px)}
+
+/* top bar */
+.top{display:flex;align-items:center;gap:12px;min-height:72px;border-bottom:1px solid var(--line);flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+.logo{font-weight:700;font-size:24px;letter-spacing:-.05em;text-decoration:none;margin-right:auto;display:flex;align-items:center;gap:4px}
+.logo i{width:7px;height:7px;border-radius:50%;background:var(--blue);margin-top:10px}
+.ctrls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+select{font:500 13px var(--sans);color:var(--fg);background-color:var(--bg);border:1px solid var(--line2);height:44px;padding:0 34px 0 12px;border-radius:0;appearance:none;-webkit-appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%238A8B93' stroke-width='1.5'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+select:hover{border-color:var(--fg3)}
+.icon{width:44px;height:44px;display:grid;place-items:center;background:transparent;border:1px solid var(--line2);color:var(--fg);cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 18px;background:var(--blue);color:#fff;font:600 14px/1.2 var(--sans);border:1px solid var(--blue);border-radius:0;text-decoration:none;cursor:pointer;transition:background .2s var(--ease),border-color .2s var(--ease)}
+.btn:hover{background:var(--blue-hover)}
+.btn .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line2)}
+.btn.ghost:hover{border-color:var(--fg3);background:transparent}
+
+/* hero */
+.hero{padding:clamp(48px,8vw,96px) 0 clamp(32px,5vw,56px)}
+.eyebrow{display:flex;align-items:center;gap:12px;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3);margin-bottom:24px}
+.eyebrow::before{content:"";width:32px;height:1px;background:var(--fg3)}
+h1,.res-h{font-size:clamp(38px,6.4vw,76px);line-height:.98;letter-spacing:-.045em;font-weight:600;max-width:16ch}
+h1 em,.res-h em{display:block;font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:-.02em}
+.lede{margin-top:24px;max-width:60ch;color:var(--fg2);font-size:clamp(16px,1.6vw,19px)}
+
+/* form */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:clamp(32px,4vw,64px);align-items:start;padding-bottom:72px}
+.blk{border-top:1px solid var(--line);padding:40px 0 8px}
+.blk h2{font-size:clamp(24px,3vw,34px);letter-spacing:-.035em;font-weight:600;margin-bottom:28px;line-height:1.1}
+.num{color:var(--blue-ink);font-weight:500;margin-right:6px}
+.q{border:0;padding:0;margin:0 0 36px;min-width:0}
+legend,.lab{font-weight:600;font-size:17px;letter-spacing:-.01em;display:block;padding:0;margin-bottom:4px}
+.help{color:var(--fg3);font-size:14px;margin-bottom:4px}
+.opts{display:grid;gap:8px;margin-top:12px}
+.cards{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.seg{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.opt{position:relative;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:14px 16px;min-height:52px;border:1px solid var(--line2);cursor:pointer;transition:border-color .2s var(--ease),background .2s var(--ease)}
+.opt:hover{border-color:var(--fg3)}
+.opt input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.opt .n{font-weight:600;font-size:15px;display:flex;align-items:center;gap:10px;line-height:1.3}
+.opt .n::before{content:"";width:14px;height:14px;border:1px solid var(--fg3);flex:none}
+.opt:has(input[type=radio]) .n::before{border-radius:50%}
+.opt .d{color:var(--fg2);font-size:14px;line-height:1.4;padding-left:24px}
+.opt:has(input:checked){border-color:var(--blue);background:var(--blue-wash)}
+.opt:has(input:checked) .n::before{background:var(--blue);border-color:var(--blue);box-shadow:inset 0 0 0 3px var(--bg)}
+.opt:has(input:focus-visible){outline:2px solid var(--blue-ink);outline-offset:2px}
+.fullsel{width:100%;max-width:420px;height:52px;font-size:15px;margin-top:12px}
+.rng{display:flex;align-items:center;gap:16px;margin-top:8px}
+input[type=range]{flex:1;min-width:0;height:44px;accent-color:var(--blue);cursor:pointer}
+output{min-width:9ch;text-align:right;font-weight:600;font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.money{display:flex;align-items:center;border:1px solid var(--line2);max-width:340px;height:52px;margin-top:12px}
+.money:focus-within{border-color:var(--blue)}
+.money .cur{padding:0 4px 0 14px;color:var(--fg3);font-weight:600}
+.money input{flex:1;min-width:0;height:100%;background:transparent;border:0;color:var(--fg);font:600 18px var(--sans);padding:0 8px;outline:0}
+.money .unit{padding:0 14px;color:var(--fg3);font-size:14px;white-space:nowrap}
+
+/* live panel */
+.live{position:sticky;top:24px;border:1px solid var(--line2);background:var(--panel);padding:8px 24px 24px}
+.kv{display:flex;flex-direction:column;padding:16px 0;border-bottom:1px solid var(--line)}
+.kv span{font-size:13px;color:var(--fg3)}
+.kv b{font-size:28px;letter-spacing:-.035em;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.kv.hl b{color:var(--blue-ink)}
+.hrs{font-size:14px;color:var(--fg2);margin:16px 0 20px}
+.live .btn{width:100%;justify-content:center}
+
+/* results */
+#results{border-top:1px solid var(--line);padding:clamp(48px,7vw,88px) 0 24px;scroll-margin-top:8px}
+.answers{margin-top:20px;color:var(--fg3);font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:40px}
+.kpi{background:var(--bg);padding:24px}
+.kpi .k{font-size:13px;color:var(--fg3)}
+.kpi .v{font-size:clamp(28px,3vw,40px);font-weight:600;letter-spacing:-.04em;margin:8px 0 6px;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .s{font-size:13px;color:var(--fg2)}
+.kpi.hl{background:var(--blue)}
+.kpi.hl .k,.kpi.hl .s{color:rgba(255,255,255,.85)}
+.kpi.hl .v{color:#fff}
+.note{color:var(--fg3);font-size:14px;margin-top:12px}
+.panel{border:1px solid var(--line);padding:clamp(20px,3vw,32px);margin-top:24px}
+.panel h3{font-size:clamp(20px,2.2vw,24px);letter-spacing:-.025em;font-weight:600;margin-bottom:16px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.panel h3 .tot{font-variant-numeric:tabular-nums;color:var(--fg2);font-weight:500}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.two .panel{margin-top:24px}
+.bars{list-style:none;padding:0}
+.bars li{padding:12px 0;border-top:1px solid var(--line)}
+.bt{display:flex;justify-content:space-between;gap:12px;font-weight:600;font-size:15px}
+.bv{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{height:4px;background:var(--panel2);margin:8px 0 6px}
+.bar i{display:block;height:100%;background:var(--blue)}
+.bd{font-size:13px;color:var(--fg3)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--fg3);font:12px var(--sans)}
+.chart .lv{fill:var(--blue-ink);font-weight:600}
+.chart .lc{fill:var(--fg2);font-weight:600}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.step{background:var(--bg);padding:24px}
+.step .k{color:var(--blue-ink);font-weight:600;font-size:14px;margin-bottom:8px}
+.step p{color:var(--fg2)}
+.tip{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 0;border-top:1px solid var(--line)}
+.tip b{display:block;font-weight:600}
+.tip span{color:var(--blue-ink);font-size:14px}
+.cta{margin-top:24px;padding:clamp(28px,5vw,56px);background:var(--panel);border:1px solid var(--line2)}
+.cta h3{font-size:clamp(28px,3.6vw,44px);letter-spacing:-.04em;font-weight:600;line-height:1.05;max-width:20ch;margin:8px 0 16px}
+.cta p{color:var(--fg2);max-width:56ch}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:28px}
+
+/* assumptions */
+details{border:1px solid var(--line);margin-top:24px}
+summary{cursor:pointer;padding:20px clamp(20px,3vw,32px);font-weight:600;font-size:17px;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::after{content:"+";color:var(--fg3);font-weight:400;font-size:22px;line-height:1}
+details[open] summary::after{content:"–"}
+.adet{padding:0 clamp(20px,3vw,32px) 28px}
+.adet > p{color:var(--fg3);font-size:14px;margin-bottom:20px}
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px 24px}
+.af{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--fg2)}
+.ai{display:flex;gap:6px;align-items:center}
+.ai input{width:100%;min-width:0;height:44px;background:var(--bg);border:1px solid var(--line2);color:var(--fg);font:500 15px var(--sans);padding:0 10px;border-radius:0}
+.ai input:focus{border-color:var(--blue);outline:0}
+.ai em{font-style:normal;color:var(--fg3);font-size:13px;white-space:nowrap}
+.foot{border-top:1px solid var(--line);margin-top:56px;padding:28px 0 40px;color:var(--fg3);font-size:13px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);opacity:0;background:var(--fg);color:var(--bg);padding:12px 18px;font-weight:600;font-size:14px;pointer-events:none;transition:opacity .25s var(--ease),transform .25s var(--ease);z-index:50}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:960px){
+  .layout{grid-template-columns:1fr}
+  #live{position:fixed;left:0;right:0;bottom:0;z-index:20}
+  .live{position:static;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));border-width:1px 0 0}
+  .kv{padding:0;border:0}
+  .kv span{font-size:11px;line-height:1.3}
+  .kv b{font-size:17px}
+  .kv.net,.hrs,.live .btn{display:none}
+  body{padding-bottom:76px}
+  #toast{bottom:92px}
+  .two,.steps{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .top .btn{display:none}
+  .tip{flex-direction:column;align-items:flex-start}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media print{
+  :root,:root[data-theme]{--bg:#fff;--fg:#0B0B0C;--fg2:#33343A;--fg3:#5E5F67;--line:rgba(0,0,0,.14);--line2:rgba(0,0,0,.24);--panel:#fff;--panel2:#eee;--blue-ink:#2B4BFF}
+  .ctrls,.layout,.acts,details,#toast,.hero{display:none!important}
+  body{padding:0}
+  #results{border:0;padding-top:16px}
+  .panel,.kpis,.cta{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<header class="top wrap">
+  <a class="logo" href="https://unusai.works/" target="_top">unus<i aria-hidden="true"></i></a>
+  <div class="ctrls">
+    <label><span class="sr" data-t="lang"></span><select id="lang"></select></label>
+    <label><span class="sr" data-t="cur"></span><select id="cur"><option value="USD">$ USD</option><option value="GBP">£ GBP</option><option value="EUR">€ EUR</option><option value="CHF">CHF</option></select></label>
+    <button class="icon" id="theme" type="button" data-ta="theme"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg></button>
+    <a class="btn contact" href="https://unusai.works/contact.html" target="_top"><span class="dot"></span><span data-t="cta_btn"></span></a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow" data-t="eyebrow"></p>
+    <h1><span data-t="h1a"></span> <em data-t="h1b"></em></h1>
+    <p class="lede" data-t="lede"></p>
+  </section>
+  <div class="layout">
+    <form id="form" novalidate></form>
+    <aside id="live" aria-live="polite"></aside>
+  </div>
+  <section id="results" aria-labelledby="res-h"></section>
+  <div id="assump"></div>
+  <footer class="foot"><span data-t="footer"></span><span data-t="disclaimer"></span></footer>
+</main>
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   COPY — English is the source. German has three locales:
+   de-DE as written, de-AT (same text, Austrian number and
+   currency format), de-CH (ß→ss, Swiss terms, CHF).
+   French and Italian are the Swiss variants.
+============================================================ */
+const T = {
+en:{
+ title:"AI agent cost calculator · unus",
+ eyebrow:"unus · Cost and value calculator",
+ h1a:"What would an AI agent cost you,", h1b:"and what would it give back?",
+ lede:"Answer a few plain questions. You get the cost to build, the cost to run each month, and the month it pays for itself. No sign-up. Nothing leaves your browser.",
+ lang:"Language", cur:"Currency", theme:"Switch between light and dark",
+ s1:"What should the agent do?", s2:"How much work is it today?", s3:"How should it work?",
+ q_use:"Pick the closest job",
+ use_voice:"Voice support", use_voice_d:"Answers customer calls and resolves routine requests.",
+ use_workflow:"Workflow automation", use_workflow_d:"Moves cases through a process: checks, approvals, updates.",
+ use_docs:"Documents and back office", use_docs_d:"Reads invoices, claims or contracts and processes them.",
+ use_commerce:"Agentic commerce", use_commerce_d:"Helps customers find, compare and buy, at any hour.",
+ use_app:"AI-native app", use_app_d:"A new product or tool with AI at its core.",
+ use_other:"Something else", use_other_d:"Start from a balanced default.",
+ q_sector:"Your sector",
+ sec_banking:"Banking", sec_insurance:"Insurance", sec_telecom:"Telecom", sec_manufacturing:"Manufacturing", sec_energy:"Energy", sec_retail:"Retail", sec_public:"Public sector", sec_other:"Other",
+ q_volume:"How many times a month does this job happen?", h_volume:"Calls, cases, documents or orders.", per_month:"a month",
+ q_minutes:"How long does it take a person each time?", minutes:"{n} min",
+ q_staff:"What does an hour of your team's time cost?", h_staff:"Salary plus overheads. If unsure, keep the default.", per_hour:"per hour",
+ q_judg:"How much judgement does the job need?",
+ judg_rules:"Clear rules", judg_rules_d:"The same steps every time.",
+ judg_some:"Some judgement", judg_some_d:"Mostly routine, a few exceptions.",
+ judg_lots:"A lot of judgement", judg_lots_d:"Every case is a little different.",
+ q_sys:"How many systems must it work with?", h_sys:"For example CRM, ERP, email, telephony or databases.",
+ sys_few:"1 or 2", sys_some:"3 to 5", sys_many:"6 or more",
+ q_data:"What is the information it needs like?",
+ data_clean:"Tidy", data_clean_d:"Mostly text, in one place.",
+ data_mixed:"Mixed", data_mixed_d:"Documents and spreadsheets in several places.",
+ data_messy:"Scattered", data_messy_d:"Scans, audio, and nobody is quite sure where.",
+ q_chan:"Where will people use it?", h_chan:"Pick all that apply.",
+ chan_tools:"Inside tools you already use", chan_chat:"Website chat", chan_voice:"Phone", chan_email:"Email", chan_app:"A new app or portal",
+ q_langs:"How many languages must it speak?",
+ q_quality:"How capable should the AI model be?",
+ q_frugal:"Fast and frugal", q_frugal_d:"Simple, high-volume tasks.",
+ q_balanced:"Balanced", q_balanced_d:"The right choice for most jobs.",
+ q_best:"Most capable", q_best_d:"Hard reasoning, at a higher price.",
+ q_risk:"How much is at stake in each decision?", h_risk:"This sets the EU AI Act safeguards we build in.",
+ risk_minimal:"Low", risk_minimal_d:"Internal help. No effect on anyone's rights.",
+ risk_limited:"Medium", risk_limited_d:"Customer-facing. People know they are talking to AI.",
+ risk_high:"High", risk_high_d:"Credit, insurance, hiring or health. A person approves.",
+ q_host:"Where must it run?",
+ host_shared:"Any secure cloud", host_eu:"EU or Swiss region only", host_own:"On your own cloud",
+ q_share:"How much of the work can the agent take on?", h_share:"Set from your answers. Change it if you know better.", share_v:"{n}% of cases",
+ r_build:"To build, one time", r_run:"To run, per month", r_net:"Net saving per month", r_payback:"Pays for itself in",
+ months:"{n} months", month1:"under a month", never:"more than 3 years",
+ r_hours:"{h} hours a month back to your team, about {f} full-time people.",
+ see_full:"See the full estimate",
+ res_eyebrow:"Your estimate", res_h1:"Here is what it", res_h2:"adds up to.",
+ k_build:"Build, one time", k_run:"Run, per month", k_value:"Work taken on, per month", k_payback:"Pays for itself in", k_3yr:"Net benefit over 3 years",
+ between:"between {a} and {b}",
+ range_note:"Ranges run from 20% below to 25% above. A two-week discovery sprint narrows them.",
+ chart_h:"When it pays for itself", chart_cost:"Spent so far", chart_value:"Value returned so far", chart_axis:"Months", chart_even:"Break-even",
+ build_h:"What the build pays for", run_h:"What running it costs each month",
+ seg_discovery:"Discovery sprint", seg_discovery_d:"Two weeks with you on data, permissions and risk, plus a first working slice.",
+ seg_logic:"Agent design and reasoning", seg_logic_d:"How the agent thinks, decides and hands over to a person.",
+ seg_integr:"Connecting your systems", seg_integr_d:"Secure links so it can read from and act in your systems.",
+ seg_data:"Preparing your information", seg_data_d:"Cleaning, organising and indexing what the agent must know.",
+ seg_channels:"Where people use it", seg_channels_d:"The chat, phone, email or app experience, in every language.",
+ seg_glue:"Joining it all up", seg_glue_d:"Making every part work together, end to end.",
+ seg_test:"Testing and evaluation", seg_test_d:"Golden-set tests before every release.",
+ seg_comp:"Safety and compliance", seg_comp_d:"EU AI Act safeguards, approvals and a full audit trail.",
+ seg_deploy:"Going live", seg_deploy_d:"Deployment, security review and monitoring set-up.",
+ seg_change:"Training your team", seg_change_d:"Hand-over, playbooks and training sessions.",
+ seg_infra:"Cloud during the build", seg_infra_d:"Test environments while we build.",
+ run_ai:"AI model usage", run_ai_d:"{n} model calls a month.",
+ run_voice:"Voice and telephony", run_voice_d:"{n} minutes of calls a month.",
+ run_host:"Hosting", run_host_d:"Servers, security and backups.",
+ run_store:"Knowledge storage", run_store_d:"The search index and memory the agent reads from.",
+ run_mon:"Monitoring and evaluation", run_mon_d:"Every step traced and quality checked.",
+ run_review:"Human review", run_review_d:"Your team checks a share of cases.",
+ run_support:"Support and improvement", run_support_d:"Fixes, updates and model upgrades.",
+ time_h:"How long it takes", t1_k:"This week", t1:"A 30-minute conversation with an engineer.", t2_k:"Weeks 1 to 2", t2:"Discovery sprint and a first working slice.", t3_k:"Week {n}", t3:"First version in production, evaluated and monitored.",
+ tips_h:"Ways to bring the cost down", apply:"Apply", tips_none:"Your setup is already lean. Nothing obvious to trim.",
+ tip_quality:"Use a lighter AI model where it is good enough", tip_channel:"Launch on one channel first, add the others later", tip_langs:"Launch in one language, add the rest after", tip_sys:"Connect the most important systems first",
+ save_mo:"Saves about {x} a month", save_once:"Saves about {x} on the build", applied:"Applied",
+ cta_eyebrow:"Next step", cta_h:"Bring this estimate to a 30-minute conversation.", cta_p:"With an engineer, not a salesperson. Bring one process that costs your people time.", cta_btn:"Start a conversation",
+ copy:"Copy the estimate", copied:"Copied to your clipboard", print:"Save as PDF", share:"Copy a link to this estimate", shared:"Link copied", reset:"Start over",
+ assump_h:"Assumptions, for your tech team", assump_p:"Every number the calculator uses. Change any of them and the estimate updates.",
+ a_rate:"Team rate, blended, per hour", a_team:"People building in parallel", a_price:"{q}: model price per 1M tokens, in / out", a_voice:"Voice and telephony, per minute", a_support:"Support and improvement, % of build a year", a_fx:"Exchange rate, 1 US dollar in {c}",
+ a_note:"Model prices follow the public price books (November 2026) and are in US dollars. Cloud prices are converted from the original rupee model at ₹89 to the US dollar. Labour uses a European blended rate.",
+ disclaimer:"A directional estimate for planning, not a quote.",
+ footer:"unus · Swiss applied AI lab · Zürich, Riga, Tallinn, Kyiv, Bengaluru",
+ sum_title:"AI agent estimate"
+},
+de:{
+ title:"KI-Agenten-Kostenrechner · unus",
+ eyebrow:"unus · Kosten- und Nutzenrechner",
+ h1a:"Was kostet Sie ein KI-Agent,", h1b:"und was bringt er Ihnen?",
+ lede:"Beantworten Sie ein paar einfache Fragen. Sie erhalten die Kosten für den Aufbau, die monatlichen Betriebskosten und den Monat, ab dem sich der Agent rechnet. Ohne Anmeldung. Ihre Angaben bleiben in Ihrem Browser.",
+ lang:"Sprache", cur:"Währung", theme:"Zwischen hell und dunkel wechseln",
+ s1:"Was soll der Agent tun?", s2:"Wie viel Arbeit ist es heute?", s3:"Wie soll er arbeiten?",
+ q_use:"Wählen Sie die passendste Aufgabe",
+ use_voice:"Voice Support", use_voice_d:"Nimmt Kundenanrufe entgegen und erledigt Routineanliegen.",
+ use_workflow:"Workflow-Automatisierung", use_workflow_d:"Führt Fälle durch einen Prozess: prüfen, freigeben, aktualisieren.",
+ use_docs:"Dokumente und Backoffice", use_docs_d:"Liest Rechnungen, Schadenmeldungen oder Verträge und verarbeitet sie.",
+ use_commerce:"Agentic Commerce", use_commerce_d:"Hilft Ihrer Kundschaft beim Finden, Vergleichen und Kaufen, rund um die Uhr.",
+ use_app:"KI-native App", use_app_d:"Ein neues Produkt oder Werkzeug mit KI im Kern.",
+ use_other:"Etwas anderes", use_other_d:"Start mit ausgewogenen Standardwerten.",
+ q_sector:"Ihre Branche",
+ sec_banking:"Banken", sec_insurance:"Versicherungen", sec_telecom:"Telekommunikation", sec_manufacturing:"Industrie", sec_energy:"Energie", sec_retail:"Handel", sec_public:"Öffentlicher Sektor", sec_other:"Andere",
+ q_volume:"Wie oft im Monat fällt diese Aufgabe an?", h_volume:"Anrufe, Fälle, Dokumente oder Bestellungen.", per_month:"pro Monat",
+ q_minutes:"Wie lange braucht eine Person jeweils dafür?", minutes:"{n} Min.",
+ q_staff:"Was kostet eine Arbeitsstunde Ihres Teams?", h_staff:"Lohn plus Gemeinkosten. Im Zweifel den Standardwert lassen.", per_hour:"pro Stunde",
+ q_judg:"Wie viel Ermessen braucht die Aufgabe?",
+ judg_rules:"Klare Regeln", judg_rules_d:"Jedes Mal dieselben Schritte.",
+ judg_some:"Etwas Ermessen", judg_some_d:"Meist Routine, ein paar Ausnahmen.",
+ judg_lots:"Viel Ermessen", judg_lots_d:"Jeder Fall ist ein wenig anders.",
+ q_sys:"Mit wie vielen Systemen muss er arbeiten?", h_sys:"Zum Beispiel CRM, ERP, E-Mail, Telefonie oder Datenbanken.",
+ sys_few:"1 oder 2", sys_some:"3 bis 5", sys_many:"6 oder mehr",
+ q_data:"Wie sehen die Informationen aus, die er braucht?",
+ data_clean:"Aufgeräumt", data_clean_d:"Vor allem Text, an einem Ort.",
+ data_mixed:"Gemischt", data_mixed_d:"Dokumente und Tabellen an mehreren Orten.",
+ data_messy:"Verstreut", data_messy_d:"Scans, Audio, und niemand weiß genau, wo.",
+ q_chan:"Wo werden die Leute ihn nutzen?", h_chan:"Mehrfachauswahl möglich.",
+ chan_tools:"In Tools, die Sie schon nutzen", chan_chat:"Chat auf der Website", chan_voice:"Telefon", chan_email:"E-Mail", chan_app:"Eine neue App oder ein Portal",
+ q_langs:"Wie viele Sprachen muss er sprechen?",
+ q_quality:"Wie leistungsfähig soll das KI-Modell sein?",
+ q_frugal:"Schnell und sparsam", q_frugal_d:"Einfache Aufgaben in großer Menge.",
+ q_balanced:"Ausgewogen", q_balanced_d:"Die richtige Wahl für die meisten Aufgaben.",
+ q_best:"Am leistungsfähigsten", q_best_d:"Anspruchsvolles Denken, zu höherem Preis.",
+ q_risk:"Wie viel steht bei jeder Entscheidung auf dem Spiel?", h_risk:"Danach richten sich die Schutzmaßnahmen nach EU AI Act.",
+ risk_minimal:"Wenig", risk_minimal_d:"Interne Hilfe. Keine Auswirkung auf die Rechte von Personen.",
+ risk_limited:"Mittel", risk_limited_d:"Mit Kundenkontakt. Alle wissen, dass sie mit KI sprechen.",
+ risk_high:"Viel", risk_high_d:"Kredit, Versicherung, Personal oder Gesundheit. Ein Mensch gibt frei.",
+ q_host:"Wo muss er laufen?",
+ host_shared:"In einer sicheren Cloud", host_eu:"Nur in der EU oder der Schweiz", host_own:"In Ihrer eigenen Cloud",
+ q_share:"Wie viel der Arbeit kann der Agent übernehmen?", h_share:"Aus Ihren Antworten abgeleitet. Passen Sie es an, wenn Sie es besser wissen.", share_v:"{n} % der Fälle",
+ r_build:"Aufbau, einmalig", r_run:"Betrieb, pro Monat", r_net:"Nettoersparnis pro Monat", r_payback:"Rechnet sich nach",
+ months:"{n} Monaten", month1:"weniger als einem Monat", never:"mehr als 3 Jahren",
+ r_hours:"{h} Stunden pro Monat zurück für Ihr Team, etwa {f} Vollzeitstellen.",
+ see_full:"Zur vollständigen Schätzung",
+ res_eyebrow:"Ihre Schätzung", res_h1:"Das ergibt", res_h2:"sich daraus.",
+ k_build:"Aufbau, einmalig", k_run:"Betrieb, pro Monat", k_value:"Übernommene Arbeit, pro Monat", k_payback:"Rechnet sich nach", k_3yr:"Nettonutzen über 3 Jahre",
+ between:"zwischen {a} und {b}",
+ range_note:"Die Spannen reichen von 20 % darunter bis 25 % darüber. Ein zweiwöchiger Discovery-Sprint macht sie enger.",
+ chart_h:"Ab wann er sich rechnet", chart_cost:"Bisher ausgegeben", chart_value:"Bisher zurückgewonnen", chart_axis:"Monate", chart_even:"Break-even",
+ build_h:"Wofür der Aufbau bezahlt", run_h:"Was der Betrieb jeden Monat kostet",
+ seg_discovery:"Discovery-Sprint", seg_discovery_d:"Zwei Wochen mit Ihnen zu Daten, Berechtigungen und Risiko, plus ein erster funktionierender Teil.",
+ seg_logic:"Agenten-Design und Logik", seg_logic_d:"Wie der Agent denkt, entscheidet und an einen Menschen übergibt.",
+ seg_integr:"Anbindung Ihrer Systeme", seg_integr_d:"Sichere Verbindungen, damit er in Ihren Systemen lesen und handeln kann.",
+ seg_data:"Aufbereitung Ihrer Informationen", seg_data_d:"Bereinigen, ordnen und indexieren, was der Agent wissen muss.",
+ seg_channels:"Wo die Leute ihn nutzen", seg_channels_d:"Chat, Telefon, E-Mail oder App, in jeder Sprache.",
+ seg_glue:"Alles zusammenführen", seg_glue_d:"Damit alle Teile durchgängig zusammenspielen.",
+ seg_test:"Tests und Evaluation", seg_test_d:"Golden-Set-Tests vor jedem Release.",
+ seg_comp:"Sicherheit und Compliance", seg_comp_d:"Schutzmaßnahmen nach EU AI Act, Freigaben und ein lückenloser Audit-Trail.",
+ seg_deploy:"Go-live", seg_deploy_d:"Deployment, Sicherheitsprüfung und Monitoring.",
+ seg_change:"Schulung Ihres Teams", seg_change_d:"Übergabe, Playbooks und Schulungen.",
+ seg_infra:"Cloud während des Aufbaus", seg_infra_d:"Testumgebungen, solange wir bauen.",
+ run_ai:"Nutzung der KI-Modelle", run_ai_d:"{n} Modellaufrufe pro Monat.",
+ run_voice:"Sprache und Telefonie", run_voice_d:"{n} Gesprächsminuten pro Monat.",
+ run_host:"Hosting", run_host_d:"Server, Sicherheit und Backups.",
+ run_store:"Wissensspeicher", run_store_d:"Suchindex und Gedächtnis, aus denen der Agent liest.",
+ run_mon:"Monitoring und Evaluation", run_mon_d:"Jeder Schritt nachverfolgt, die Qualität geprüft.",
+ run_review:"Menschliche Prüfung", run_review_d:"Ihr Team prüft einen Teil der Fälle.",
+ run_support:"Support und Weiterentwicklung", run_support_d:"Fehlerbehebung, Updates und Modell-Upgrades.",
+ time_h:"Wie lange es dauert", t1_k:"Diese Woche", t1:"Dreißig Minuten mit einem Ingenieur.", t2_k:"Woche 1 bis 2", t2:"Discovery-Sprint und ein erster funktionierender Teil.", t3_k:"Woche {n}", t3:"Erste Version in Produktion, evaluiert und überwacht.",
+ tips_h:"So senken Sie die Kosten", apply:"Übernehmen", tips_none:"Ihr Setup ist bereits schlank. Nichts Offensichtliches zu kürzen.",
+ tip_quality:"Ein leichteres KI-Modell nutzen, wo es reicht", tip_channel:"Mit einem Kanal starten, die anderen später ergänzen", tip_langs:"In einer Sprache starten, die übrigen danach", tip_sys:"Zuerst die wichtigsten Systeme anbinden",
+ save_mo:"Spart etwa {x} pro Monat", save_once:"Spart etwa {x} beim Aufbau", applied:"Übernommen",
+ cta_eyebrow:"Nächster Schritt", cta_h:"Bringen Sie diese Schätzung in ein 30-minütiges Gespräch mit.", cta_p:"Mit einem Ingenieur, nicht mit einem Verkäufer. Bringen Sie einen Prozess mit, der Ihre Leute Zeit kostet.", cta_btn:"Gespräch beginnen",
+ copy:"Schätzung kopieren", copied:"In die Zwischenablage kopiert", print:"Als PDF speichern", share:"Link zu dieser Schätzung kopieren", shared:"Link kopiert", reset:"Neu beginnen",
+ assump_h:"Annahmen, für Ihr Tech-Team", assump_p:"Jede Zahl, die der Rechner verwendet. Ändern Sie eine, und die Schätzung passt sich an.",
+ a_rate:"Teamsatz, gemischt, pro Stunde", a_team:"Personen, die parallel bauen", a_price:"{q}: Modellpreis pro 1 Mio. Tokens, Ein- / Ausgabe", a_voice:"Sprache und Telefonie, pro Minute", a_support:"Support und Weiterentwicklung, % des Aufbaus pro Jahr", a_fx:"Wechselkurs, 1 US-Dollar in {c}",
+ a_note:"Modellpreise nach den öffentlichen Preislisten (November 2026), in US-Dollar. Cloudpreise aus dem ursprünglichen Rupien-Modell umgerechnet zu ₹89 pro US-Dollar. Arbeitskosten mit einem europäischen Mischsatz.",
+ disclaimer:"Eine Richtschätzung für die Planung, kein Angebot.",
+ footer:"unus · Schweizer Labor für angewandte KI · Zürich, Riga, Tallinn, Kyiv, Bengaluru",
+ sum_title:"Schätzung KI-Agent"
+},
+fr:{
+ title:"Calculateur de coûts d’agent IA · unus",
+ eyebrow:"unus · Calculateur de coûts et de valeur",
+ h1a:"Combien vous coûterait un agent IA,", h1b:"et que vous rapporterait-il ?",
+ lede:"Répondez à quelques questions simples. Vous obtenez le coût de construction, le coût mensuel d’exploitation et le mois où l’agent est rentabilisé. Sans inscription. Rien ne quitte votre navigateur.",
+ lang:"Langue", cur:"Devise", theme:"Passer du clair au sombre",
+ s1:"Que doit faire l’agent ?", s2:"Combien de travail cela représente-t-il aujourd’hui ?", s3:"Comment doit-il fonctionner ?",
+ q_use:"Choisissez la tâche la plus proche",
+ use_voice:"Support vocal", use_voice_d:"Répond aux appels des clients et traite les demandes courantes.",
+ use_workflow:"Automatisation des processus", use_workflow_d:"Fait avancer les dossiers : contrôles, validations, mises à jour.",
+ use_docs:"Documents et back-office", use_docs_d:"Lit factures, sinistres ou contrats et les traite.",
+ use_commerce:"Commerce agentique", use_commerce_d:"Aide les clients à trouver, comparer et acheter, à toute heure.",
+ use_app:"Application IA native", use_app_d:"Un nouveau produit ou outil construit autour de l’IA.",
+ use_other:"Autre chose", use_other_d:"Partir de valeurs équilibrées.",
+ q_sector:"Votre secteur",
+ sec_banking:"Banque", sec_insurance:"Assurance", sec_telecom:"Télécoms", sec_manufacturing:"Industrie", sec_energy:"Énergie", sec_retail:"Commerce de détail", sec_public:"Secteur public", sec_other:"Autre",
+ q_volume:"Combien de fois par mois cette tâche se présente-t-elle ?", h_volume:"Appels, dossiers, documents ou commandes.", per_month:"par mois",
+ q_minutes:"Combien de temps faut-il à une personne à chaque fois ?", minutes:"{n} min",
+ q_staff:"Combien coûte une heure de travail de votre équipe ?", h_staff:"Salaire plus frais généraux. En cas de doute, gardez la valeur par défaut.", per_hour:"par heure",
+ q_judg:"Quelle part de jugement la tâche demande-t-elle ?",
+ judg_rules:"Des règles claires", judg_rules_d:"Les mêmes étapes à chaque fois.",
+ judg_some:"Un peu de jugement", judg_some_d:"Surtout de la routine, quelques exceptions.",
+ judg_lots:"Beaucoup de jugement", judg_lots_d:"Chaque cas est un peu différent.",
+ q_sys:"Avec combien de systèmes doit-il travailler ?", h_sys:"Par exemple CRM, ERP, e-mail, téléphonie ou bases de données.",
+ sys_few:"1 ou 2", sys_some:"3 à 5", sys_many:"6 ou plus",
+ q_data:"À quoi ressemblent les informations dont il a besoin ?",
+ data_clean:"Bien rangées", data_clean_d:"Surtout du texte, au même endroit.",
+ data_mixed:"Mixtes", data_mixed_d:"Documents et tableurs à plusieurs endroits.",
+ data_messy:"Éparpillées", data_messy_d:"Scans, audio, et personne ne sait vraiment où.",
+ q_chan:"Où les gens l’utiliseront-ils ?", h_chan:"Plusieurs choix possibles.",
+ chan_tools:"Dans vos outils actuels", chan_chat:"Chat sur le site web", chan_voice:"Téléphone", chan_email:"E-mail", chan_app:"Une nouvelle app ou un portail",
+ q_langs:"Combien de langues doit-il parler ?",
+ q_quality:"Quel niveau de performance pour le modèle d’IA ?",
+ q_frugal:"Rapide et économe", q_frugal_d:"Tâches simples, gros volumes.",
+ q_balanced:"Équilibré", q_balanced_d:"Le bon choix pour la plupart des tâches.",
+ q_best:"Le plus performant", q_best_d:"Raisonnement exigeant, à un prix plus élevé.",
+ q_risk:"Quel est l’enjeu de chaque décision ?", h_risk:"Cela fixe les garde-fous prévus par l’AI Act de l’UE.",
+ risk_minimal:"Faible", risk_minimal_d:"Aide interne. Aucun effet sur les droits des personnes.",
+ risk_limited:"Moyen", risk_limited_d:"En contact avec la clientèle, qui sait parler à une IA.",
+ risk_high:"Élevé", risk_high_d:"Crédit, assurance, recrutement ou santé. Une personne valide.",
+ q_host:"Où doit-il tourner ?",
+ host_shared:"Dans un cloud sécurisé", host_eu:"Uniquement dans l’UE ou en Suisse", host_own:"Dans votre propre cloud",
+ q_share:"Quelle part du travail l’agent peut-il prendre en charge ?", h_share:"Déduit de vos réponses. Ajustez si vous en savez plus.", share_v:"{n} % des cas",
+ r_build:"Construction, une fois", r_run:"Exploitation, par mois", r_net:"Économie nette par mois", r_payback:"Rentabilisé en",
+ months:"{n} mois", month1:"moins d’un mois", never:"plus de 3 ans",
+ r_hours:"{h} heures par mois rendues à votre équipe, soit environ {f} postes à plein temps.",
+ see_full:"Voir l’estimation complète",
+ res_eyebrow:"Votre estimation", res_h1:"Voici ce que", res_h2:"cela représente.",
+ k_build:"Construction, une fois", k_run:"Exploitation, par mois", k_value:"Travail pris en charge, par mois", k_payback:"Rentabilisé en", k_3yr:"Bénéfice net sur 3 ans",
+ between:"entre {a} et {b}",
+ range_note:"Les fourchettes vont de 20 % en dessous à 25 % au-dessus. Un sprint de découverte de deux semaines les resserre.",
+ chart_h:"Quand il est rentabilisé", chart_cost:"Dépensé à ce jour", chart_value:"Valeur rendue à ce jour", chart_axis:"Mois", chart_even:"Seuil de rentabilité",
+ build_h:"Ce que finance la construction", run_h:"Ce que coûte l’exploitation chaque mois",
+ seg_discovery:"Sprint de découverte", seg_discovery_d:"Deux semaines avec vous sur les données, les accès et le risque, plus une première brique qui fonctionne.",
+ seg_logic:"Conception et raisonnement de l’agent", seg_logic_d:"Comment l’agent réfléchit, décide et passe la main à une personne.",
+ seg_integr:"Connexion à vos systèmes", seg_integr_d:"Des liaisons sécurisées pour lire et agir dans vos systèmes.",
+ seg_data:"Préparation de vos informations", seg_data_d:"Nettoyer, organiser et indexer ce que l’agent doit savoir.",
+ seg_channels:"Là où on l’utilise", seg_channels_d:"Chat, téléphone, e-mail ou app, dans chaque langue.",
+ seg_glue:"Tout assembler", seg_glue_d:"Faire fonctionner toutes les parties ensemble, de bout en bout.",
+ seg_test:"Tests et évaluation", seg_test_d:"Tests sur un jeu de référence avant chaque version.",
+ seg_comp:"Sécurité et conformité", seg_comp_d:"Garde-fous de l’AI Act, validations et traçabilité complète.",
+ seg_deploy:"Mise en production", seg_deploy_d:"Déploiement, revue de sécurité et supervision.",
+ seg_change:"Formation de votre équipe", seg_change_d:"Passation, guides et sessions de formation.",
+ seg_infra:"Cloud pendant la construction", seg_infra_d:"Environnements de test pendant le développement.",
+ run_ai:"Utilisation des modèles d’IA", run_ai_d:"{n} appels au modèle par mois.",
+ run_voice:"Voix et téléphonie", run_voice_d:"{n} minutes d’appels par mois.",
+ run_host:"Hébergement", run_host_d:"Serveurs, sécurité et sauvegardes.",
+ run_store:"Stockage des connaissances", run_store_d:"L’index de recherche et la mémoire de l’agent.",
+ run_mon:"Supervision et évaluation", run_mon_d:"Chaque étape tracée, la qualité contrôlée.",
+ run_review:"Contrôle humain", run_review_d:"Votre équipe vérifie une partie des cas.",
+ run_support:"Support et amélioration", run_support_d:"Corrections, mises à jour et nouveaux modèles.",
+ time_h:"Combien de temps cela prend", t1_k:"Cette semaine", t1:"Trente minutes avec un ingénieur.", t2_k:"Semaines 1 à 2", t2:"Sprint de découverte et une première brique qui fonctionne.", t3_k:"Semaine {n}", t3:"Première version en production, évaluée et supervisée.",
+ tips_h:"Pistes pour réduire le coût", apply:"Appliquer", tips_none:"Votre configuration est déjà sobre. Rien d’évident à réduire.",
+ tip_quality:"Utiliser un modèle plus léger là où il suffit", tip_channel:"Démarrer sur un seul canal, ajouter les autres ensuite", tip_langs:"Démarrer dans une langue, ajouter les autres ensuite", tip_sys:"Connecter d’abord les systèmes les plus importants",
+ save_mo:"Économise environ {x} par mois", save_once:"Économise environ {x} sur la construction", applied:"Appliqué",
+ cta_eyebrow:"Prochaine étape", cta_h:"Apportez cette estimation à un échange de 30 minutes.", cta_p:"Avec un ingénieur, pas un commercial. Venez avec un processus qui coûte du temps à vos équipes.", cta_btn:"Démarrer un échange",
+ copy:"Copier l’estimation", copied:"Copié dans le presse-papiers", print:"Enregistrer en PDF", share:"Copier le lien de cette estimation", shared:"Lien copié", reset:"Recommencer",
+ assump_h:"Hypothèses, pour votre équipe technique", assump_p:"Tous les chiffres utilisés par le calculateur. Modifiez-en un et l’estimation se met à jour.",
+ a_rate:"Taux d’équipe, mixte, par heure", a_team:"Personnes travaillant en parallèle", a_price:"{q} : prix du modèle par million de tokens, entrée / sortie", a_voice:"Voix et téléphonie, par minute", a_support:"Support et amélioration, % de la construction par an", a_fx:"Taux de change, 1 dollar US en {c}",
+ a_note:"Prix des modèles selon les grilles publiques (novembre 2026), en dollars US. Prix du cloud convertis depuis le modèle d’origine en roupies à ₹89 pour un dollar US. Main-d’œuvre au taux mixte européen.",
+ disclaimer:"Une estimation indicative pour planifier, pas une offre.",
+ footer:"unus · Laboratoire suisse d’IA appliquée · Zurich, Riga, Tallinn, Kyiv, Bengaluru",
+ sum_title:"Estimation agent IA"
+},
+it:{
+ title:"Calcolatore dei costi di un agente IA · unus",
+ eyebrow:"unus · Calcolatore di costi e valore",
+ h1a:"Quanto vi costerebbe un agente IA,", h1b:"e quanto vi restituirebbe?",
+ lede:"Rispondete a poche domande semplici. Ottenete il costo di realizzazione, il costo mensile di esercizio e il mese in cui l’agente si ripaga. Senza registrazione. Nulla lascia il vostro browser.",
+ lang:"Lingua", cur:"Valuta", theme:"Passa da chiaro a scuro",
+ s1:"Che cosa deve fare l’agente?", s2:"Quanto lavoro richiede oggi?", s3:"Come deve funzionare?",
+ q_use:"Scegliete il compito più vicino",
+ use_voice:"Assistenza vocale", use_voice_d:"Risponde alle chiamate dei clienti e risolve le richieste di routine.",
+ use_workflow:"Automazione dei processi", use_workflow_d:"Porta avanti le pratiche: controlli, approvazioni, aggiornamenti.",
+ use_docs:"Documenti e back office", use_docs_d:"Legge fatture, sinistri o contratti e li elabora.",
+ use_commerce:"Commercio agentico", use_commerce_d:"Aiuta i clienti a trovare, confrontare e acquistare, a ogni ora.",
+ use_app:"App nativa IA", use_app_d:"Un nuovo prodotto o strumento con l’IA al centro.",
+ use_other:"Altro", use_other_d:"Partire da valori equilibrati.",
+ q_sector:"Il vostro settore",
+ sec_banking:"Banche", sec_insurance:"Assicurazioni", sec_telecom:"Telecomunicazioni", sec_manufacturing:"Industria", sec_energy:"Energia", sec_retail:"Commercio al dettaglio", sec_public:"Settore pubblico", sec_other:"Altro",
+ q_volume:"Quante volte al mese si presenta questo compito?", h_volume:"Chiamate, pratiche, documenti o ordini.", per_month:"al mese",
+ q_minutes:"Quanto tempo richiede ogni volta a una persona?", minutes:"{n} min",
+ q_staff:"Quanto costa un’ora di lavoro del vostro team?", h_staff:"Stipendio più costi generali. Nel dubbio, lasciate il valore predefinito.", per_hour:"all’ora",
+ q_judg:"Quanto giudizio richiede il compito?",
+ judg_rules:"Regole chiare", judg_rules_d:"Sempre gli stessi passaggi.",
+ judg_some:"Un po’ di giudizio", judg_some_d:"Per lo più routine, qualche eccezione.",
+ judg_lots:"Molto giudizio", judg_lots_d:"Ogni caso è un po’ diverso.",
+ q_sys:"Con quanti sistemi deve lavorare?", h_sys:"Per esempio CRM, ERP, e-mail, telefonia o banche dati.",
+ sys_few:"1 o 2", sys_some:"Da 3 a 5", sys_many:"6 o più",
+ q_data:"Come sono le informazioni di cui ha bisogno?",
+ data_clean:"Ordinate", data_clean_d:"Soprattutto testo, in un unico posto.",
+ data_mixed:"Miste", data_mixed_d:"Documenti e fogli di calcolo in più posti.",
+ data_messy:"Sparse", data_messy_d:"Scansioni, audio, e nessuno sa bene dove.",
+ q_chan:"Dove lo useranno le persone?", h_chan:"Più scelte possibili.",
+ chan_tools:"Negli strumenti che già usate", chan_chat:"Chat sul sito web", chan_voice:"Telefono", chan_email:"E-mail", chan_app:"Una nuova app o un portale",
+ q_langs:"Quante lingue deve parlare?",
+ q_quality:"Quanto deve essere capace il modello di IA?",
+ q_frugal:"Veloce ed economico", q_frugal_d:"Compiti semplici in grandi volumi.",
+ q_balanced:"Equilibrato", q_balanced_d:"La scelta giusta per la maggior parte dei compiti.",
+ q_best:"Il più capace", q_best_d:"Ragionamento complesso, a un prezzo più alto.",
+ q_risk:"Quanto è in gioco in ogni decisione?", h_risk:"Determina le tutele previste dall’AI Act dell’UE.",
+ risk_minimal:"Poco", risk_minimal_d:"Aiuto interno. Nessun effetto sui diritti delle persone.",
+ risk_limited:"Medio", risk_limited_d:"A contatto con i clienti, che sanno di parlare con un’IA.",
+ risk_high:"Molto", risk_high_d:"Credito, assicurazioni, assunzioni o salute. Una persona approva.",
+ q_host:"Dove deve girare?",
+ host_shared:"In un cloud sicuro", host_eu:"Solo nell’UE o in Svizzera", host_own:"Nel vostro cloud",
+ q_share:"Quanta parte del lavoro può svolgere l’agente?", h_share:"Ricavato dalle vostre risposte. Modificatelo se ne sapete di più.", share_v:"{n} % dei casi",
+ r_build:"Realizzazione, una tantum", r_run:"Esercizio, al mese", r_net:"Risparmio netto al mese", r_payback:"Si ripaga in",
+ months:"{n} mesi", month1:"meno di un mese", never:"oltre 3 anni",
+ r_hours:"{h} ore al mese restituite al vostro team, circa {f} persone a tempo pieno.",
+ see_full:"Vedi la stima completa",
+ res_eyebrow:"La vostra stima", res_h1:"Ecco a quanto", res_h2:"ammonta.",
+ k_build:"Realizzazione, una tantum", k_run:"Esercizio, al mese", k_value:"Lavoro svolto, al mese", k_payback:"Si ripaga in", k_3yr:"Beneficio netto in 3 anni",
+ between:"tra {a} e {b}",
+ range_note:"Le forbici vanno dal 20 % in meno al 25 % in più. Uno sprint di discovery di due settimane le restringe.",
+ chart_h:"Quando si ripaga", chart_cost:"Speso finora", chart_value:"Valore restituito finora", chart_axis:"Mesi", chart_even:"Pareggio",
+ build_h:"Che cosa paga la realizzazione", run_h:"Quanto costa l’esercizio ogni mese",
+ seg_discovery:"Sprint di discovery", seg_discovery_d:"Due settimane con voi su dati, autorizzazioni e rischio, più una prima parte funzionante.",
+ seg_logic:"Progettazione e ragionamento dell’agente", seg_logic_d:"Come l’agente pensa, decide e passa la mano a una persona.",
+ seg_integr:"Collegamento ai vostri sistemi", seg_integr_d:"Connessioni sicure per leggere e agire nei vostri sistemi.",
+ seg_data:"Preparazione delle informazioni", seg_data_d:"Pulire, ordinare e indicizzare ciò che l’agente deve sapere.",
+ seg_channels:"Dove lo si usa", seg_channels_d:"Chat, telefono, e-mail o app, in ogni lingua.",
+ seg_glue:"Mettere tutto insieme", seg_glue_d:"Far funzionare tutte le parti insieme, da capo a fondo.",
+ seg_test:"Test e valutazione", seg_test_d:"Test su un set di riferimento prima di ogni rilascio.",
+ seg_comp:"Sicurezza e conformità", seg_comp_d:"Tutele dell’AI Act, approvazioni e tracciabilità completa.",
+ seg_deploy:"Messa in produzione", seg_deploy_d:"Deployment, verifica di sicurezza e monitoraggio.",
+ seg_change:"Formazione del team", seg_change_d:"Passaggio di consegne, guide e sessioni di formazione.",
+ seg_infra:"Cloud durante la realizzazione", seg_infra_d:"Ambienti di test durante lo sviluppo.",
+ run_ai:"Uso dei modelli di IA", run_ai_d:"{n} chiamate al modello al mese.",
+ run_voice:"Voce e telefonia", run_voice_d:"{n} minuti di chiamate al mese.",
+ run_host:"Hosting", run_host_d:"Server, sicurezza e backup.",
+ run_store:"Archivio delle conoscenze", run_store_d:"L’indice di ricerca e la memoria dell’agente.",
+ run_mon:"Monitoraggio e valutazione", run_mon_d:"Ogni passaggio tracciato, qualità verificata.",
+ run_review:"Controllo umano", run_review_d:"Il vostro team verifica una parte dei casi.",
+ run_support:"Assistenza e miglioramento", run_support_d:"Correzioni, aggiornamenti e nuovi modelli.",
+ time_h:"Quanto tempo ci vuole", t1_k:"Questa settimana", t1:"Trenta minuti con un ingegnere.", t2_k:"Settimane 1 e 2", t2:"Sprint di discovery e una prima parte funzionante.", t3_k:"Settimana {n}", t3:"Prima versione in produzione, valutata e monitorata.",
+ tips_h:"Come ridurre il costo", apply:"Applica", tips_none:"La vostra configurazione è già snella. Niente di evidente da tagliare.",
+ tip_quality:"Usare un modello più leggero dove basta", tip_channel:"Partire con un solo canale, aggiungere gli altri dopo", tip_langs:"Partire con una lingua, aggiungere le altre dopo", tip_sys:"Collegare prima i sistemi più importanti",
+ save_mo:"Risparmia circa {x} al mese", save_once:"Risparmia circa {x} sulla realizzazione", applied:"Applicato",
+ cta_eyebrow:"Prossimo passo", cta_h:"Portate questa stima a un colloquio di 30 minuti.", cta_p:"Con un ingegnere, non con un venditore. Portate un processo che costa tempo alle vostre persone.", cta_btn:"Iniziare un colloquio",
+ copy:"Copia la stima", copied:"Copiato negli appunti", print:"Salva come PDF", share:"Copia il link a questa stima", shared:"Link copiato", reset:"Ricomincia",
+ assump_h:"Ipotesi, per il vostro team tecnico", assump_p:"Tutti i numeri usati dal calcolatore. Modificatene uno e la stima si aggiorna.",
+ a_rate:"Tariffa del team, mista, all’ora", a_team:"Persone che lavorano in parallelo", a_price:"{q}: prezzo del modello per milione di token, entrata / uscita", a_voice:"Voce e telefonia, al minuto", a_support:"Assistenza e miglioramento, % della realizzazione all’anno", a_fx:"Cambio, 1 dollaro USA in {c}",
+ a_note:"Prezzi dei modelli secondo i listini pubblici (novembre 2026), in dollari USA. Prezzi del cloud convertiti dal modello originale in rupie a ₹89 per dollaro USA. Manodopera a tariffa mista europea.",
+ disclaimer:"Una stima indicativa per la pianificazione, non un’offerta.",
+ footer:"unus · Laboratorio svizzero di IA applicata · Zurigo, Riga, Tallinn, Kyiv, Bengaluru",
+ sum_title:"Stima agente IA"
+}};
+T["de-DE"] = T.de;
+T["de-AT"] = T.de;  /* same wording; Austrian formats come from Intl("de-AT") */
+T["de-CH"] = Object.fromEntries(Object.entries(T.de).map(([k,v]) => [k, v.replace(/ß/g,"ss")]));
+T["de-CH"].disclaimer = "Eine Richtschätzung für die Planung, keine Offerte.";
+T["fr-CH"] = T.fr;
+T["it-CH"] = T.it;
+
+const LANGS = { en:"English", "de-DE":"Deutsch (Deutschland)", "de-AT":"Deutsch (Österreich)", "de-CH":"Deutsch (Schweiz)", "fr-CH":"Français (Suisse)", "it-CH":"Italiano (Svizzera)" };
+const LANG_CUR = { en:"USD", "de-DE":"EUR", "de-AT":"EUR", "de-CH":"CHF", "fr-CH":"CHF", "it-CH":"CHF" };
+const STAFF_USD = { en:45, "de-DE":55, "de-AT":52, "de-CH":95, "fr-CH":95, "it-CH":95 };  /* loaded hourly staff cost, USD */
+const CURS = ["USD","GBP","EUR","CHF"];
+
+/* ============================================================
+   MODEL — every price in US dollars. Effort shape follows the
+   original workbook (integrations ≈ 3 weeks each, front end per
+   page, test 20%, deploy 20–30%, support 18% of build a year),
+   regrouped into segments a non-technical buyer recognises.
+============================================================ */
+const DEF_A = () => ({
+  rate:80, team:4, infraWeek:50, tokIn:4000, tokOut:600, cache:0.5,
+  models:{ frugal:{n:"Gemini 3 Flash",i:0.5,o:3}, balanced:{n:"Claude Sonnet 5",i:3,o:15}, best:{n:"Claude Opus 4.8",i:5,o:25} },
+  voiceMin:0.08, support:18, fx:{ USD:1, GBP:0.75, EUR:0.86, CHF:0.80 }
+});
+const JUDG = { rules:{h:90,calls:3,share:75}, some:{h:180,calls:6,share:60}, lots:{h:360,calls:12,share:40} };
+const SYS  = { few:1, some:3, many:6 };
+const DATA = { clean:{h:40,once:50,mo:20}, mixed:{h:160,once:300,mo:250}, messy:{h:320,once:1200,mo:600} };
+const CHAN = { tools:60, chat:160, voice:240, email:80, app:450 };
+const RISK = { minimal:{c:.05,rev:0}, limited:{c:.12,rev:.03}, high:{c:.25,rev:.10} };
+const HOST = { shared:{m:1,d:.2}, eu:{m:1.15,d:.2}, own:{m:1.4,d:.3} };
+const STOPS = [100,250,500,1000,2000,3000,5000,7500,10000,15000,25000,50000,100000,250000];
+const PRESETS = {
+  voice:   {volume:10000,minutes:6, judg:"some", sys:"some",data:"mixed",chan:["voice"],        quality:"balanced",risk:"limited",share:60},
+  workflow:{volume:2000, minutes:20,judg:"rules",sys:"some",data:"mixed",chan:["tools"],        quality:"balanced",risk:"minimal",share:75},
+  docs:    {volume:3000, minutes:12,judg:"some", sys:"some",data:"messy",chan:["tools","email"],quality:"balanced",risk:"limited",share:60},
+  commerce:{volume:10000,minutes:5, judg:"some", sys:"many",data:"mixed",chan:["chat"],         quality:"balanced",risk:"limited",share:50},
+  app:     {volume:5000, minutes:10,judg:"lots", sys:"some",data:"mixed",chan:["app"],          quality:"best",    risk:"limited",share:40},
+  other:   {volume:2000, minutes:15,judg:"some", sys:"some",data:"mixed",chan:["chat"],         quality:"balanced",risk:"limited",share:60}
+};
+const ENUM = { use:Object.keys(PRESETS), sector:["banking","insurance","telecom","manufacturing","energy","retail","public","other"],
+  judg:Object.keys(JUDG), sys:Object.keys(SYS), data:Object.keys(DATA), quality:["frugal","balanced","best"],
+  risk:Object.keys(RISK), host:Object.keys(HOST), lang:Object.keys(LANGS), cur:CURS };
+
+const sum = o => Object.values(o).reduce((a,b)=>a+b,0);
+function detectLang(){
+  const l = (navigator.languages && navigator.languages[0]) || navigator.language || "en";
+  if(/^de/i.test(l)) return /CH$/i.test(l) ? "de-CH" : /AT$/i.test(l) ? "de-AT" : "de-DE";
+  if(/^gsw/i.test(l)) return "de-CH";
+  if(/^fr/i.test(l)) return "fr-CH";
+  if(/^it/i.test(l)) return "it-CH";
+  return "en";
+}
+function defaultS(lang){
+  lang = lang || detectLang();
+  return { lang, cur:LANG_CUR[lang], use:"workflow", sector:"other", ...structuredClone(PRESETS.workflow),
+           staff:STAFF_USD[lang], staffTouched:false, langs:1, host:"eu" };
+}
+
+function compute(s, a){
+  const J=JUDG[s.judg], D=DATA[s.data], R=RISK[s.risk], H=HOST[s.host];
+  const chanH = s.chan.reduce((x,c)=>x+CHAN[c],0) * (1+(s.langs-1)*0.12);
+  const h = { discovery:160, logic:J.h, integr:SYS[s.sys]*120, data:D.h, channels:chanH };
+  const core = h.logic+h.integr+h.data+h.channels;
+  Object.assign(h, { glue:core*.3, test:core*(.2+(s.langs-1)*.04), comp:core*R.c+(s.risk==="high"?80:0),
+                     deploy:core*H.d, change:40+core*.06 });
+  const hours = sum(h);
+  const weeks = 2 + Math.ceil((hours-h.discovery)/(Math.max(1,a.team)*40));
+  const b = {}; for(const k in h) b[k] = h[k]*a.rate;
+  b.data += D.once;
+  b.infra = (weeks-2)*a.infraWeek;
+  const build = sum(b);
+
+  const m = a.models[s.quality], calls = s.volume*J.calls;
+  const inEff = a.tokIn*(1-a.cache*0.9);                 /* cached input billed at 10% */
+  const voiceMin = s.chan.includes("voice") ? s.volume/s.chan.length*Math.min(s.minutes,30)*0.8 : 0;
+  const r = {
+    ai: calls*(inEff*m.i + a.tokOut*m.o)/1e6,
+    voice: voiceMin*a.voiceMin,
+    host: (120 + s.volume/1000*4)*H.m,
+    store: D.mo*H.m,
+    mon: 60 + s.volume*0.003,
+    review: s.volume*R.rev*3/60*s.staff,                  /* 3 minutes a reviewed case */
+    support: hours*a.rate*a.support/100/12
+  };
+  if(!r.voice) delete r.voice;
+  if(!r.review) delete r.review;
+  const run = sum(r);
+  const hoursFreed = s.volume*s.minutes/60*s.share/100;
+  const value = hoursFreed*s.staff, net = value-run;
+  return { b, build, weeks, r, run, calls, voiceMin, hoursFreed, fte:hoursFreed/140, value, net,
+           payback: net>0 ? build/net : Infinity, y3: (value-run)*36 - build };
+}
+
+/* ============================================================
+   STATE — localStorage for the visitor, URL hash for sharing.
+   Both are untrusted input, so every field is checked.
+============================================================ */
+function cleanS(raw){
+  const d = defaultS(raw && ENUM.lang.includes(raw.lang) ? raw.lang : undefined);
+  if(!raw || typeof raw!=="object") return d;
+  for(const k in ENUM) if(ENUM[k].includes(raw[k])) d[k]=raw[k];
+  if(Array.isArray(raw.chan)){ const c=[...new Set(raw.chan.filter(x=>x in CHAN))]; if(c.length) d.chan=c; }
+  if(STOPS.includes(raw.volume)) d.volume=raw.volume;
+  const num=(k,lo,hi)=>{ const v=Number(raw[k]); if(Number.isFinite(v)) d[k]=Math.min(hi,Math.max(lo,v)); };
+  num("minutes",1,120); num("langs",1,6); num("share",10,95); num("staff",1,5000);
+  d.staffTouched = raw.staffTouched===true;
+  return d;
+}
+function cleanA(raw){
+  const d = DEF_A();
+  if(!raw || typeof raw!=="object") return d;
+  const pos=v=>Number.isFinite(Number(v)) && Number(v)>=0;
+  for(const k of ["rate","team","infraWeek","tokIn","tokOut","cache","voiceMin","support"]) if(pos(raw[k])) d[k]=Number(raw[k]);
+  for(const q in d.models) for(const p of ["i","o"]) if(raw.models && raw.models[q] && pos(raw.models[q][p])) d.models[q][p]=Number(raw.models[q][p]);
+  for(const c of CURS) if(raw.fx && pos(raw.fx[c]) && Number(raw.fx[c])>0) d.fx[c]=Number(raw.fx[c]);
+  d.fx.USD=1; d.team=Math.max(1,Math.round(d.team)); d.cache=Math.min(1,d.cache);
+  return d;
+}
+function load(){
+  let raw=null;
+  if(location.hash.length>1){ try{ raw=JSON.parse(decodeURIComponent(atob(location.hash.slice(1)))); }catch(e){} }
+  if(!raw){ try{ raw=JSON.parse(localStorage.getItem("unus-agent-calc")); }catch(e){} }
+  return { s:cleanS(raw && raw.s), a:cleanA(raw && raw.a) };
+}
+let { s:S, a:A } = load();
+const save = () => { try{ localStorage.setItem("unus-agent-calc", JSON.stringify({s:S,a:A})); }catch(e){} };
+const shareURL = () => location.href.split("#")[0] + "#" + btoa(encodeURIComponent(JSON.stringify({s:S,a:A})));
+
+/* ============================================================
+   FORMATTING
+============================================================ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function t(k, v){
+  let s = (T[S.lang]||T.en)[k] ?? T.en[k] ?? k;
+  if(v) s = s.replace(/\{(\w+)\}/g, (_,x) => v[x] ?? "");
+  if(S.lang==="fr-CH") s = s.replace(/ ([?!:;])/g, " $1");
+  return s;
+}
+const loc = () => S.lang==="en" ? (S.cur==="USD" ? "en-US" : "en-GB") : S.lang;
+const nfCache = {};
+const nf = o => { const k=loc()+JSON.stringify(o); return nfCache[k] || (nfCache[k]=new Intl.NumberFormat(loc(),o)); };
+const money = (usd, o={}) => nf({style:"currency",currency:S.cur,maximumSignificantDigits:3,...o}).format(usd*A.fx[S.cur]);
+const fmtN = n => nf({maximumSignificantDigits:3}).format(n);
+const fmt1 = n => nf({maximumFractionDigits:1}).format(n);
+const curSym = () => nf({style:"currency",currency:S.cur}).formatToParts(0).find(p=>p.type==="currency").value;
+const pb = p => !isFinite(p) || p>36 ? t("never") : p<1 ? t("month1") : t("months",{n:Math.ceil(p)});
+
+/* ============================================================
+   FORM
+============================================================ */
+const SECTIONS = [
+  [1, [ {id:"use",opts:ENUM.use,p:"use_"}, {id:"sector",sel:ENUM.sector,p:"sec_"} ]],
+  [2, [ {id:"volume",range:true}, {id:"minutes",range:true}, {id:"staff",money:true} ]],
+  [3, [ {id:"judg",opts:ENUM.judg,p:"judg_"}, {id:"sys",opts:ENUM.sys,p:"sys_",seg:true}, {id:"data",opts:ENUM.data,p:"data_"},
+        {id:"chan",opts:Object.keys(CHAN),p:"chan_",multi:true,seg:true}, {id:"langs",range:true},
+        {id:"quality",opts:ENUM.quality,p:"q_"}, {id:"risk",opts:ENUM.risk,p:"risk_"},
+        {id:"host",opts:ENUM.host,p:"host_",seg:true}, {id:"share",range:true} ]]
+];
+function rangeSpec(id){
+  if(id==="volume") return [0,STOPS.length-1,1,Math.max(0,STOPS.indexOf(S.volume))];
+  if(id==="minutes") return [1,120,1,S.minutes];
+  if(id==="langs") return [1,6,1,S.langs];
+  return [10,95,5,S.share];
+}
+function rangeText(id){
+  if(id==="volume") return fmtN(S.volume)+" "+t("per_month");
+  if(id==="minutes") return t("minutes",{n:S.minutes});
+  if(id==="langs") return String(S.langs);
+  return t("share_v",{n:S.share});
+}
+function field(q){
+  const hasHelp = ("h_"+q.id) in T.en;
+  const help = hasHelp ? `<p class="help" id="h-${q.id}">${esc(t("h_"+q.id))}</p>` : "";
+  const desc = hasHelp ? ` aria-describedby="h-${q.id}"` : "";
+  const lab = esc(t("q_"+q.id));
+  if(q.opts){
+    const type = q.multi ? "checkbox" : "radio";
+    return `<fieldset class="q"${desc}><legend>${lab}</legend>${help}<div class="opts ${q.seg?"seg":"cards"}">${
+      q.opts.map(o=>{
+        const on = q.multi ? S[q.id].includes(o) : S[q.id]===o;
+        const d = (q.p+o+"_d") in T.en ? `<span class="d">${esc(t(q.p+o+"_d"))}</span>` : "";
+        return `<label class="opt"><input type="${type}" name="${q.id}" value="${o}"${on?" checked":""}><span class="n">${esc(t(q.p+o))}</span>${d}</label>`;
+      }).join("")}</div></fieldset>`;
+  }
+  if(q.sel) return `<div class="q"><label class="lab" for="f-${q.id}">${lab}</label><select class="fullsel" id="f-${q.id}" name="${q.id}">${
+      q.sel.map(o=>`<option value="${o}"${S[q.id]===o?" selected":""}>${esc(t(q.p+o))}</option>`).join("")}</select></div>`;
+  if(q.range){
+    const [min,max,step,val] = rangeSpec(q.id);
+    return `<div class="q"><label class="lab" for="f-${q.id}">${lab}</label>${help}<div class="rng"><input type="range" id="f-${q.id}" name="${q.id}" min="${min}" max="${max}" step="${step}" value="${val}" aria-valuetext="${esc(rangeText(q.id))}"${desc}><output id="o-${q.id}" for="f-${q.id}">${esc(rangeText(q.id))}</output></div></div>`;
+  }
+  return `<div class="q"><label class="lab" for="f-staff">${lab}</label>${help}<div class="money"><span class="cur">${esc(curSym())}</span><input type="number" inputmode="decimal" id="f-staff" name="staff" min="1" step="1" value="${Math.round(S.staff*A.fx[S.cur])}"${desc}><span class="unit">${esc(t("per_hour"))}</span></div></div>`;
+}
+function renderForm(){
+  $("form").innerHTML = SECTIONS.map(([n,qs]) =>
+    `<section class="blk"><h2><span class="num">${n}/</span>${esc(t("s"+n))}</h2>${qs.map(field).join("")}</section>`).join("");
+}
+function syncRange(id){
+  const el=$("f-"+id); if(!el) return;
+  const v=rangeSpec(id)[3]; if(+el.value!==v) el.value=v;
+  el.setAttribute("aria-valuetext", rangeText(id));
+  $("o-"+id).textContent = rangeText(id);
+}
+
+/* ============================================================
+   RESULTS
+============================================================ */
+function renderLive(c){
+  $("live").innerHTML = `<div class="live">
+    <div class="kv"><span>${esc(t("r_build"))}</span><b>${money(c.build)}</b></div>
+    <div class="kv"><span>${esc(t("r_run"))}</span><b>${money(c.run)}</b></div>
+    <div class="kv net"><span>${esc(t("r_net"))}</span><b>${money(c.net)}</b></div>
+    <div class="kv hl"><span>${esc(t("r_payback"))}</span><b>${esc(pb(c.payback))}</b></div>
+    <p class="hrs">${esc(t("r_hours",{h:fmtN(c.hoursFreed),f:fmt1(c.fte)}))}</p>
+    <a class="btn" href="#results"><span class="dot"></span>${esc(t("see_full"))}</a></div>`;
+}
+function bars(obj, prefix, vars){
+  const e = Object.entries(obj).sort((x,y)=>y[1]-x[1]), mx = e[0][1] || 1;
+  return `<ul class="bars">${e.map(([k,v])=>`<li><div class="bt"><span>${esc(t(prefix+k))}</span><span class="bv">${money(v)}</span></div><div class="bar"><i style="width:${(v/mx*100).toFixed(1)}%"></i></div><p class="bd">${esc(t(prefix+k+"_d",vars&&vars(k)))}</p></li>`).join("")}</ul>`;
+}
+function chart(c){
+  const W=720, H=290, L=70, R=150, TP=18, B=40, N=36;
+  const cost=m=>c.build+c.run*m, val=m=>c.value*m;
+  const max = Math.max(cost(N), val(N), 1)*1.06;
+  const x=m=>L+(W-L-R)*m/N, y=v=>TP+(H-TP-B)*(1-v/max);
+  const pts=f=>Array.from({length:N+1},(_,m)=>`${x(m).toFixed(1)},${y(f(m)).toFixed(1)}`).join(" ");
+  let g="";
+  for(let i=0;i<=4;i++){ const v=max/4*i;
+    g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-10}" y="${y(v)+4}" text-anchor="end">${money(v,{notation:"compact",maximumSignificantDigits:2})}</text>`; }
+  for(let m=0;m<=N;m+=6) g+=`<text x="${x(m)}" y="${H-B+20}" text-anchor="middle">${m}</text>`;
+  g+=`<text x="${(L+W-R)/2}" y="${H-4}" text-anchor="middle">${esc(t("chart_axis"))}</text>`;
+  if(isFinite(c.payback) && c.payback<=N){
+    const bx=x(c.payback), by=y(cost(c.payback));
+    g+=`<line x1="${bx}" x2="${bx}" y1="${TP}" y2="${H-B}" stroke="var(--fg3)" stroke-dasharray="3 4"/><circle cx="${bx}" cy="${by}" r="5" fill="var(--blue-ink)" stroke="var(--bg)" stroke-width="2"/><text x="${bx+8}" y="${TP+12}" class="lc">${esc(t("chart_even"))} · ${esc(pb(c.payback))}</text>`;
+  }
+  let yc=y(cost(N)), yv=y(val(N));
+  if(Math.abs(yc-yv)<18){ const mid=(yc+yv)/2, up=yv<yc; yv=mid+(up?-9:9); yc=mid+(up?9:-9); }
+  g+=`<polyline points="${pts(cost)}" fill="none" stroke="var(--fg2)" stroke-width="2"/>`;
+  g+=`<polyline points="${pts(val)}" fill="none" stroke="var(--blue-ink)" stroke-width="2.5"/>`;
+  g+=`<text x="${W-R+10}" y="${yc+4}" class="lc">${esc(t("chart_cost"))}</text><text x="${W-R+10}" y="${yv+4}" class="lv">${esc(t("chart_value"))}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t("chart_h")+": "+pb(c.payback))}">${g}</svg>`;
+}
+let TIPS = [];
+function tips(c){
+  const out=[];
+  const tr=(key,mut,kind)=>{
+    const s2=structuredClone(S); mut(s2);
+    const c2=compute(s2,A), save = kind==="mo" ? c.run-c2.run : c.build-c2.build;
+    if(save/(kind==="mo"?c.run:c.build) >= 0.03) out.push({key,mut,kind,save});
+  };
+  if(S.quality!=="frugal") tr("tip_quality", s=>{ s.quality = s.quality==="best" ? "balanced" : "frugal"; }, "mo");
+  if(S.chan.length>1)      tr("tip_channel", s=>{ s.chan = [s.chan[0]]; }, "once");
+  if(S.langs>1)            tr("tip_langs",   s=>{ s.langs = 1; }, "once");
+  if(S.sys==="many")       tr("tip_sys",     s=>{ s.sys = "some"; }, "once");
+  return out.sort((p,q)=>(q.kind==="mo"?q.save*12:q.save)-(p.kind==="mo"?p.save*12:p.save)).slice(0,3);
+}
+function answers(){
+  return [t("use_"+S.use), t("sec_"+S.sector), fmtN(S.volume)+" "+t("per_month"), t("minutes",{n:S.minutes}), t("judg_"+S.judg), t("q_"+S.quality)].join(" · ");
+}
+function renderResults(c){
+  TIPS = tips(c);
+  const runVars = k => ({ n: k==="ai" ? fmtN(c.calls) : fmtN(c.voiceMin) });
+  $("results").innerHTML = `
+    <p class="eyebrow">${esc(t("res_eyebrow"))}</p>
+    <h2 class="res-h" id="res-h">${esc(t("res_h1"))} <em>${esc(t("res_h2"))}</em></h2>
+    <p class="answers">${esc(answers())}</p>
+    <div class="kpis">
+      <div class="kpi"><div class="k">${esc(t("k_build"))}</div><div class="v">${money(c.build)}</div><div class="s">${esc(t("between",{a:money(c.build*.8),b:money(c.build*1.25)}))}</div></div>
+      <div class="kpi"><div class="k">${esc(t("k_run"))}</div><div class="v">${money(c.run)}</div><div class="s">${esc(t("between",{a:money(c.run*.8),b:money(c.run*1.25)}))}</div></div>
+      <div class="kpi"><div class="k">${esc(t("k_value"))}</div><div class="v">${money(c.value)}</div><div class="s">${esc(t("r_hours",{h:fmtN(c.hoursFreed),f:fmt1(c.fte)}))}</div></div>
+      <div class="kpi hl"><div class="k">${esc(t("k_payback"))}</div><div class="v">${esc(pb(c.payback))}</div><div class="s">${esc(t("r_net"))}: ${money(c.net)}</div></div>
+      <div class="kpi"><div class="k">${esc(t("k_3yr"))}</div><div class="v">${money(c.y3)}</div><div class="s">${esc(t("disclaimer"))}</div></div>
+    </div>
+    <p class="note">${esc(t("range_note"))}</p>
+    <div class="panel"><h3>${esc(t("chart_h"))}</h3>${chart(c)}</div>
+    <div class="two">
+      <div class="panel"><h3>${esc(t("build_h"))}<span class="tot">${money(c.build)}</span></h3>${bars(c.b,"seg_")}</div>
+      <div class="panel"><h3>${esc(t("run_h"))}<span class="tot">${money(c.run)}</span></h3>${bars(c.r,"run_",runVars)}</div>
+    </div>
+    <div class="panel"><h3>${esc(t("time_h"))}</h3><div class="steps">
+      <div class="step"><p class="k">1/ ${esc(t("t1_k"))}</p><p>${esc(t("t1"))}</p></div>
+      <div class="step"><p class="k">2/ ${esc(t("t2_k"))}</p><p>${esc(t("t2"))}</p></div>
+      <div class="step"><p class="k">3/ ${esc(t("t3_k",{n:c.weeks}))}</p><p>${esc(t("t3"))}</p></div>
+    </div></div>
+    <div class="panel"><h3>${esc(t("tips_h"))}</h3>${ TIPS.length ? TIPS.map((p,i)=>`<div class="tip"><div><b>${esc(t(p.key))}</b><span>${esc(t(p.kind==="mo"?"save_mo":"save_once",{x:money(p.save)}))}</span></div><button class="btn ghost" type="button" data-tip="${i}">${esc(t("apply"))}</button></div>`).join("") : `<p class="bd">${esc(t("tips_none"))}</p>` }</div>
+    <div class="cta">
+      <p class="eyebrow">${esc(t("cta_eyebrow"))}</p>
+      <h3>${esc(t("cta_h"))}</h3>
+      <p>${esc(t("cta_p"))}</p>
+      <div class="acts">
+        <a class="btn" href="https://unusai.works/contact.html" target="_top"><span class="dot"></span>${esc(t("cta_btn"))}</a>
+        <button class="btn ghost" type="button" data-act="copy">${esc(t("copy"))}</button>
+        <button class="btn ghost" type="button" data-act="share">${esc(t("share"))}</button>
+        <button class="btn ghost" type="button" data-act="print">${esc(t("print"))}</button>
+        <button class="btn ghost" type="button" data-act="reset">${esc(t("reset"))}</button>
+      </div>
+    </div>`;
+}
+function renderAssump(){
+  const open = document.querySelector("#assump details")?.open ? " open" : "";
+  const fx=A.fx[S.cur], sym=esc(curSym());
+  const inp=(path,val,step,unit,money)=>`<span class="ai"><input type="number" min="0" step="${step}" data-a="${path}"${money?' data-m="1"':""} value="${val}">${unit?`<em>${unit}</em>`:""}</span>`;
+  const f=(lab,body)=>`<label class="af"><span>${esc(lab)}</span>${body}</label>`;
+  let g = f(t("a_rate"), inp("rate",+(A.rate*fx).toFixed(2),1,sym,1))
+        + f(t("a_team"), inp("team",A.team,1))
+        + f(t("a_voice"), inp("voiceMin",+(A.voiceMin*fx).toFixed(3),0.01,sym,1))
+        + f(t("a_support"), inp("support",A.support,1,"%"));
+  for(const q of ENUM.quality) g += `<div class="af"><span>${esc(t("a_price",{q:t("q_"+q)}))} · ${esc(A.models[q].n)}</span><span class="ai">${inp(`models.${q}.i`,A.models[q].i,0.01,"$")}${inp(`models.${q}.o`,A.models[q].o,0.01,"$")}</span></div>`;
+  for(const c of ["GBP","EUR","CHF"]) g += f(t("a_fx",{c}), inp(`fx.${c}`,A.fx[c],0.01));
+  $("assump").innerHTML = `<details${open}><summary>${esc(t("assump_h"))}</summary><div class="adet"><p>${esc(t("assump_p"))}</p><div class="agrid">${g}</div><p class="note">${esc(t("a_note"))}</p></div></details>`;
+}
+function update(){
+  save();
+  const c = compute(S,A);
+  renderLive(c); renderResults(c);
+}
+function renderAll(){
+  document.documentElement.lang = S.lang;
+  document.title = t("title");
+  document.querySelectorAll("[data-t]").forEach(e => e.textContent = t(e.dataset.t));
+  document.querySelectorAll("[data-ta]").forEach(e => e.setAttribute("aria-label", t(e.dataset.ta)));
+  $("lang").value = S.lang; $("cur").value = S.cur;
+  renderForm(); renderAssump(); update();
+}
+
+/* ============================================================
+   EVENTS
+============================================================ */
+function toast(msg){ const el=$("toast"); el.textContent=msg; el.classList.add("on"); clearTimeout(toast.h); toast.h=setTimeout(()=>el.classList.remove("on"),2400); }
+async function copyText(txt, ok){
+  try{ await navigator.clipboard.writeText(txt); toast(ok); }
+  catch(e){ const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); toast(ok); }
+}
+function summaryText(){
+  const c=compute(S,A), L=[t("sum_title")+" · unus", answers(), ""];
+  L.push(t("k_build")+": "+money(c.build)+" ("+t("between",{a:money(c.build*.8),b:money(c.build*1.25)})+")");
+  L.push(t("k_run")+": "+money(c.run));
+  L.push(t("k_value")+": "+money(c.value));
+  L.push(t("k_payback")+": "+pb(c.payback));
+  L.push(t("k_3yr")+": "+money(c.y3), "");
+  L.push(t("build_h")+":"); for(const [k,v] of Object.entries(c.b).sort((x,y)=>y[1]-x[1])) L.push("  "+t("seg_"+k)+": "+money(v));
+  L.push(t("run_h")+":");   for(const [k,v] of Object.entries(c.r).sort((x,y)=>y[1]-x[1])) L.push("  "+t("run_"+k)+": "+money(v));
+  L.push("", t("disclaimer"), shareURL());
+  return L.join("\n");
+}
+
+$("lang").innerHTML = Object.entries(LANGS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
+$("lang").addEventListener("change", e => {
+  S.lang = e.target.value; S.cur = LANG_CUR[S.lang];
+  if(!S.staffTouched) S.staff = STAFF_USD[S.lang];
+  renderAll();
+});
+$("cur").addEventListener("change", e => { S.cur = e.target.value; renderAll(); });
+$("theme").addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme==="light" ? "dark" : "light";
+  document.documentElement.dataset.theme = next;
+  try{ localStorage.setItem("unus-theme", next); }catch(e){}
+});
+try{ const th=localStorage.getItem("unus-theme"); if(th==="light"||th==="dark") document.documentElement.dataset.theme=th; }catch(e){}
+
+$("form").addEventListener("submit", e => e.preventDefault());
+$("form").addEventListener("input", e => {
+  const el=e.target, id=el.name; if(!id) return;
+  if(id==="chan"){
+    if(el.checked){ if(!S.chan.includes(el.value)) S.chan.push(el.value); }
+    else if(S.chan.length===1){ el.checked=true; return; }       /* at least one channel */
+    else S.chan = S.chan.filter(x=>x!==el.value);
+  }
+  else if(id==="volume") S.volume = STOPS[+el.value];
+  else if(id==="staff"){ const v=parseFloat(el.value); if(!(v>0)) return; S.staff=v/A.fx[S.cur]; S.staffTouched=true; }
+  else if(id==="minutes"||id==="langs"||id==="share") S[id] = +el.value;
+  else S[id] = el.value;
+
+  if(id==="use"){
+    Object.assign(S, structuredClone(PRESETS[S.use]));
+    renderForm();
+    document.querySelector(`input[name=use][value=${S.use}]`).focus();
+  }
+  else if(id==="judg"){ S.share = JUDG[S.judg].share; syncRange("share"); }
+  if(el.type==="range") syncRange(id);
+  update();
+});
+$("assump").addEventListener("input", e => {
+  const el=e.target, path=el.dataset.a; if(!path) return;
+  let v=parseFloat(el.value); if(!(v>=0)) return;
+  if(el.dataset.m) v /= A.fx[S.cur];
+  if(path==="team") v=Math.max(1,Math.round(v));
+  if(path.startsWith("fx.") && v<=0) return;
+  const ks=path.split("."), last=ks.pop(); ks.reduce((o,k)=>o[k],A)[last]=v;
+  update();
+});
+$("results").addEventListener("click", e => {
+  const b=e.target.closest("button"); if(!b) return;
+  if(b.dataset.tip){ const p=TIPS[+b.dataset.tip]; if(!p) return; p.mut(S); renderForm(); update(); toast(t("applied")+": "+t(p.key)); return; }
+  const act=b.dataset.act;
+  if(act==="copy") copyText(summaryText(), t("copied"));
+  if(act==="share") copyText(shareURL(), t("shared"));
+  if(act==="print") window.print();
+  if(act==="reset"){ S=defaultS(S.lang); A=DEF_A(); history.replaceState(null,"",location.pathname+location.search); renderAll(); window.scrollTo({top:0}); }
+});
+
+renderAll();
+
+/* Self-check: open the page with ?selftest and read the console. */
+if(location.search.includes("selftest")){
+  const miss=[]; for(const L of ["de","fr","it"]) for(const k in T.en) if(!(k in T[L])) miss.push(L+":"+k);
+  console.assert(!miss.length, "Missing translations", miss);
+  const base=compute(defaultS("en"),DEF_A());
+  console.assert(base.build>0 && base.run>0 && isFinite(base.payback), "Default estimate is broken", base);
+  const s2=defaultS("en"); s2.quality="best";
+  console.assert(compute(s2,DEF_A()).run>base.run, "Best model should cost more to run");
+  const s3=defaultS("en"); s3.chan=["chat","voice","app"]; s3.langs=3;
+  console.assert(compute(s3,DEF_A()).build>base.build, "More channels and languages should cost more to build");
+  console.assert(!T["de-CH"].t1.includes("ß") && T["de-CH"].t1.includes("ss"), "Swiss German must not use ß");
+  console.log("selftest finished", {build:Math.round(base.build), run:Math.round(base.run), payback:base.payback.toFixed(1), missing:miss.length});
+}
+</script>
+</body>
+</html>
